@@ -42,6 +42,13 @@ namespace MBBSEmu.Tests.ExportedModules.Majorbbs
         [InlineData("%%%%% ", "%%% ", null)] //Escaped & Unescaped %
         [InlineData("%-8s", "gold crowns", "gold crowns")]
         [InlineData("%-8s", "gold    ", "gold")]
+        //Hex conversions (#683): accepted by PRINTF_SPECIFIERS but previously unimplemented
+        [InlineData("%x", "ff", (ushort)255)]
+        [InlineData("%X", "FF", (ushort)255)]
+        [InlineData("0x%x", "0x13", (ushort)19)]
+        [InlineData("%lx", "deadbeef", (uint)0xDEADBEEF)]
+        //A trailing unimplemented specifier used to read past the end of the format string
+        [InlineData("%o", "%o", (ushort)8)]
         public void sprintf_Test(string formatString, string expectedString, params object[] values)
         {
             Reset();

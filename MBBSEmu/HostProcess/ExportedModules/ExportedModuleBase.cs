@@ -636,6 +636,52 @@ namespace MBBSEmu.HostProcess.ExportedModules
                                 msFormattedValue.Write(Encoding.ASCII.GetBytes(value.ToString()));
                                 break;
                             }
+                        //Hex is always unsigned, so the value is never sign-extended the way i/d are
+                        case 'x':
+                        case 'X':
+                            {
+                                if (stringPrecision > 0)
+                                {
+                                    padCharacter = '0';
+                                    // can't left justify a digit with 0 since it changes the digit
+                                    stringFlags &= ~EnumPrintfFlags.LeftJustify;
+                                }
+
+                                ulong hexValue;
+                                if (isVsPrintf)
+                                {
+                                    if (variableLength == 4)
+                                    {
+                                        var longLow = Module.Memory.GetWord(vsPrintfBase);
+                                        vsPrintfBase.Offset += 2;
+                                        var longHigh = Module.Memory.GetWord(vsPrintfBase);
+                                        vsPrintfBase.Offset += 2;
+                                        hexValue = (uint)longHigh << 16 | (uint)longLow;
+                                    }
+                                    else
+                                    {
+                                        hexValue = Module.Memory.GetWord(vsPrintfBase);
+                                        vsPrintfBase.Offset += 2;
+                                    }
+                                }
+                                else
+                                {
+                                    if (variableLength == 4)
+                                    {
+                                        var longLow = GetParameter(currentParameter++);
+                                        var longHigh = GetParameter(currentParameter++);
+                                        hexValue = (uint)longHigh << 16 | (uint)longLow;
+                                    }
+                                    else
+                                    {
+                                        hexValue = GetParameter(currentParameter++);
+                                    }
+                                }
+
+                                msFormattedValue.Write(Encoding.ASCII.GetBytes(
+                                    hexValue.ToString(stringToParse[i] == 'X' ? "X" : "x")));
+                                break;
+                            }
                         case 'f':
                             {
                                 var floatValue = new byte[8];
@@ -659,7 +705,9 @@ namespace MBBSEmu.HostProcess.ExportedModules
                             }
                         default:
                             {
-                                _logger.Warn($"({Module.ModuleIdentifier}) Unhandled Printf Control Character: {(char)stringToParse[i + 1]}");
+                                //i is already at the specifier here, so reading i+1 walked off the
+                                //end whenever an unimplemented specifier ended the format string
+                                _logger.Warn($"({Module.ModuleIdentifier}) Unhandled Printf Control Character: {(char)stringToParse[i]}");
                                 msOutput.Write(stringToParse.Slice(controlStart, (i - controlStart) + 1));
                                 continue;
                             }
