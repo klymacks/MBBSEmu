@@ -41,9 +41,10 @@ registration.
 
 ## Authoritative GSBL spec (Galacticomm SBL Reference, Rev N, 1994)
 
-The `MBBS4EVER/MajorBBS Docs/gsblref.pdf` reference (image-only; read pages
-directly) defines the exact mechanism. Two functions, two characters, both
-**consumed and never transmitted**:
+The GSBL reference defines the exact mechanism. It is archived publicly at
+<http://software.bbsdocumentary.com/IBM/WINDOWS/MAJORBBS/gsblref.pdf> (30 MB,
+scanned image-only, so the pages below have to be read rather than searched).
+Two functions, two characters, both **consumed and never transmitted**:
 
 - **`btupbc(chan, pausch)` — set screen-pause character** (GSBL p.133).
   *"When the pausch character is transmitted to the user **in ASCII output
