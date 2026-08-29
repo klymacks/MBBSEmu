@@ -1620,13 +1620,15 @@ namespace MBBSEmu.HostProcess.ExportedModules
             var destinationPointer = GetParameterPointer(0);
             var sourcePointer = GetParameterPointer(2);
 
+            //strcpy() returns dest on every path, so set the return value once here
+            Registers.SetPointer(destinationPointer);
+
             if (sourcePointer == FarPtr.Empty)
             {
                 Module.Memory.SetByte(destinationPointer, 0);
 #if DEBUG
                 _logger.Warn($"Source ({sourcePointer}) is NULL");
 #endif
-                Registers.SetPointer(destinationPointer);
                 return;
             }
 
@@ -1686,8 +1688,6 @@ namespace MBBSEmu.HostProcess.ExportedModules
                 //_logger.Debug($"({Module.ModuleIdentifier}) Copied {inputBuffer.Length} bytes from {sourcePointer} to {destinationPointer} -> {Encoding.ASCII.GetString(inputBuffer)}");
 #endif
             }
-
-            Registers.SetPointer(destinationPointer);
         }
 
         /// <summary>
