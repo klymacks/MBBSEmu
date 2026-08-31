@@ -2,19 +2,17 @@
 #
 # Cloud Agent per-boot start script for MBBSEmu.
 #
-# Raises the kernel inotify limits. The xUnit test suite runs test collections
-# in parallel, and each host/config fixture opens a FileSystemWatcher (inotify
-# instance). The default limit of 128 instances is exhausted under parallelism,
-# causing ~1000 spurious failures with:
-#   IOException: The configured user limit (128) on the number of inotify
-#   instances has been reached ...
-#
-# These are kernel runtime parameters that reset on every boot and are NOT
-# captured in a disk snapshot, so they must be reconciled here on each start.
-# The command is idempotent and returns immediately.
-set -euo pipefail
+# Defense-in-depth for the test suite's file-watcher usage. The primary fix is
+# DOTNET_USE_POLLING_FILE_WATCHER=1 (configured in install.sh and captured in
+# the snapshot), which makes .NET avoid inotify entirely. As an independent
+# safety net we also raise the kernel inotify limits here, since these are
+# runtime parameters that reset on every boot and are not captured in a disk
+# snapshot. The command is idempotent and returns immediately; a failure to set
+# them (e.g. restricted sudo) is non-fatal because polling already avoids the
+# limit.
+set -uo pipefail
 
-sudo sysctl -w fs.inotify.max_user_instances=8192
-sudo sysctl -w fs.inotify.max_user_watches=524288
+sudo sysctl -w fs.inotify.max_user_instances=8192 || true
+sudo sysctl -w fs.inotify.max_user_watches=524288 || true
 
-echo "MBBSEmu start: inotify limits raised."
+echo "MBBSEmu start: inotify limits raised (polling watcher is the primary mitigation)."

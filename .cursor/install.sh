@@ -3,6 +3,7 @@
 # Cloud Agent install script for MBBSEmu.
 #
 # Idempotent repository bootstrap: installs the pinned .NET SDK (if missing),
+# configures a system-wide env var so the test suite doesn't exhaust inotify,
 # restores NuGet packages, and builds the solution in Release. Safe to run
 # repeatedly and against a cached/partially-prepared VM.
 set -euo pipefail
@@ -33,9 +34,27 @@ else
   echo ".NET 10 SDK already installed: $(dotnet --version)"
 fi
 
+# 2. Use a polling file watcher for the whole VM.
+#    The xUnit suite runs test collections in parallel, and each host/config
+#    fixture opens a FileSystemWatcher. On Linux that consumes an inotify
+#    instance; the default limit of 128 is exhausted under parallelism, causing
+#    ~1000 spurious failures ("The configured user limit (128) on the number of
+#    inotify instances has been reached"). Switching .NET to a polling watcher
+#    avoids inotify entirely. These files are captured in the environment
+#    snapshot, so the setting is present for every future agent boot.
+POLLING_LINE='DOTNET_USE_POLLING_FILE_WATCHER=1'
+sudo tee /etc/profile.d/mbbsemu-dotnet.sh >/dev/null <<EOF
+export ${POLLING_LINE}
+export DOTNET_CLI_TELEMETRY_OPTOUT=1
+EOF
+if ! grep -q "^${POLLING_LINE}$" /etc/environment 2>/dev/null; then
+  echo "${POLLING_LINE}" | sudo tee -a /etc/environment >/dev/null
+fi
+export ${POLLING_LINE}
+
 cd "${REPO_ROOT}"
 
-# 2. Restore and build the full solution.
+# 3. Restore and build the full solution.
 dotnet restore
 dotnet build --no-restore --configuration Release
 
