@@ -533,10 +533,18 @@ def test_combat_and_shop() -> None:
     assert at_said and at_said.get("aimed") == "giant rat"
     k_said = parse_line('You say "k kobold thief"')
     assert k_said and k_said["kind"] == "said" and k_said.get("aimed") == "kobold thief"
-    ask = parse_line('Klymacks says "heal"')
+    ask = parse_line('Klymacks says "heal me"')
     assert ask and ask["kind"] == "heal_ask" and str(ask.get("name")) == "Klymacks"
-    comma = parse_line('Klymacks says, "heal"')
+    comma = parse_line('Klymacks says, "heal me"')
     assert comma and comma["kind"] == "heal_ask"
+    old_heal = parse_line('Klymacks says "heal"')
+    assert old_heal and old_heal["kind"] == "heal_ask"
+    old_say = parse_line('Klymacks says "say heal"')
+    assert old_say and old_say["kind"] == "heal_ask"
+    health = parse_line('Klymacks says "health"')
+    assert not health or health.get("kind") != "heal_ask"
+    hea = parse_line('Klymacks says "hea"')
+    assert not hea or hea.get("kind") != "heal_ask"
     heard = WorldState()
     heard.in_combat = True
     heard.apply(ask)
@@ -544,7 +552,7 @@ def test_combat_and_shop() -> None:
     assert heard.heal_asks["klymacks"] == "Klymacks"
     assert not heard.whiff
     assert heard.in_combat
-    own = parse_line('You say "heal"')
+    own = parse_line('You say "heal me"')
     assert own and own["kind"] == "heal_ask"
     self_say = WorldState()
     self_say.in_combat = True

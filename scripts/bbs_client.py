@@ -66,6 +66,7 @@ KEY_F8 = b"\x00F8"
 KEY_F9 = b"\x00F9"
 KEY_F10 = b"\x00F10"
 KEY_F11 = b"\x00F11"
+KEY_ESC = b"\x1b"
 KEY_UP = bytes((0x1B, ord("["), 65))
 KEY_DN = bytes((0x1B, ord("["), 66))
 HOLD_SNAPSHOT = ROOT / "data" / "screen-hold.txt"
@@ -82,7 +83,9 @@ PEEK_COMMANDS = {
 }
 
 # F1–F11 chrome. One table: footer tip and help overlay read this.
-# on = live/active; off = the other state; held = frozen header word (F11).
+# on = live/active; off = the other state.
+# F10 off is "held" (copy freeze). F11 held is SHEET (creation form only).
+# Train hold is brain paused — not F10 copy, not a screen freeze.
 FKEYS: dict[int, dict[str, str]] = {
     1: {"on": "panic"},
     2: {"on": "look"},
@@ -94,7 +97,7 @@ FKEYS: dict[int, dict[str, str]] = {
     8: {"on": "ambush", "off": "walk", "note": "(ninja) · aa"},
     9: {"on": "join", "off": "join off"},
     10: {"on": "copy", "off": "held"},
-    11: {"on": "train", "off": "live", "held": "SHEET"},
+    11: {"on": "train", "off": "live", "held": "SHEET", "note": "(hold, brain paused)"},
 }
 
 
@@ -870,6 +873,11 @@ def form_frozen(screen: AnsiScreen, sheet_lock: bool = False) -> bool:
     return bool(sheet_lock or screen.looks_like_creation())
 
 
+def play_paused(brain: Brain, *, frozen: bool = False) -> bool:
+    """Hunt/party/exp/pry must not type. Train hold still leaves the keyboard live."""
+    return bool(frozen or brain.train_holding())
+
+
 def use_local_input(
     screen: AnsiScreen, state: WorldState, sheet_lock: bool = False
 ) -> bool:
@@ -893,10 +901,12 @@ def handle_special_key(
     """F1 panic, F2–F6 peek, F7 hunt, F8 ambush/aa, F9 join, F10 copy, F11 train.
 
     Peek / copy never call takeover(). F10 freezes the painted grid and
-    copies it; hunt keeps ticking. F11 freezes health/exp/hunt/peek so the
-    TRAIN STATS / creation form is not typed into. F8 walk→ambush paces
-    `look` immediately — occupied arena then `break`/`u`/`s` on hunt ticks;
-    empty room then one `sn`. Paladin F8 flips client `aa` (1.11p has no aa command).
+    copies it; hunt keeps ticking. That is copy hold, not train hold.
+    F11 in the realm walks to the trainer or pauses the brain so the
+    player types stats. F11 does not freeze the screen. F8 walk→ambush
+    paces `look` immediately — occupied arena then `break`/`u`/`s` on hunt
+    ticks; empty room then one `sn`. Paladin F8 flips client `aa`
+    (1.11p has no aa command).
     """
     if key == KEY_F1:
         if in_realm and state is not None:
@@ -943,15 +953,18 @@ def toggle_sheet(
     locked: bool,
     on_form: bool,
 ) -> tuple[str, str | None]:
-    """F11. Returns (lock|walk|unlock, mud_line_or_none). No takeover."""
+    """F11. Creation sheet lock, or in-realm train hold. Never sends train."""
     if locked or on_form:
         brain.cancel_train()
         return "unlock", None
     if not state.in_realm:
         return "lock", None
-    _kind, mud = handle_client_line("train", brain, state)
-    if mud:
-        return "lock", mud
+    if brain.train_holding() or brain._want_train:
+        brain.cancel_train()
+        return "idle", None
+    brain.request_train(state)
+    if brain.train_holding():
+        return "pause", None
     return "walk", None
 
 
@@ -1089,13 +1102,22 @@ def handle_client_line(cmd: str, brain: Brain, state: WorldState) -> tuple[str, 
             brain.toggle_aa()
         return "aa", None
     if low in {"train", "go train"}:
+        if brain.train_holding():
+            if low == "go train":
+                brain.cancel_train()
+                return "train", None
+            return "game", raw
         if state.at_trainer():
+            brain.request_train(state)
+            return "train", None
+        if brain._want_train:
             brain.cancel_train()
-            return "train", "train"
-        brain.request_train()
+            return "train", None
+        brain.request_train(state)
         return "train", None
     if raw:
-        brain.cancel_train()
+        if not brain.train_holding():
+            brain.cancel_train()
         return "game", raw
     return "enter", ""
 
@@ -1205,6 +1227,8 @@ def chrome(
     tag = ""
     if frozen:
         tag = fkey_label(11, held=True)
+    elif brain.train_holding():
+        tag = "TRAIN HOLD"
     elif state.can_train():
         tag = fkey_label(11)
     right = status_line(screen, host)
@@ -1238,6 +1262,8 @@ def chrome(
         tip = (foot or "Type on the form. F11 live after SAVE. Last name required.")[:80]
     elif frozen:
         tip = fkey_label(11, style="sheet_tip")
+    elif brain.train_holding():
+        tip = "train hold  brain paused  you type  F11/Esc live"
     elif brain.bail:
         tip = "friendly fire   logged off   a human has to be at the keys"
     elif state.in_realm:
@@ -1280,7 +1306,7 @@ def help_overlay() -> bytes:
         *(fkey_label(n, style="help") for n in range(1, 12)),
         "F2-F6       peek - hunter stays on",
         "hunt stop   same as F7, not sent to the game",
-        "train       same as F11 — freezes status on the sheet",
+        "train       same as F11 — train hold, brain paused, you type stats",
         "Ctrl-C      hang up",
         "Names go on the bar under the form, then Enter",
         "At [HP=] type reroll to throw the character.",
@@ -1330,7 +1356,7 @@ def read_key(stdin: int, pending: bytearray) -> bytes | None:
         _more_stdin(stdin, pending, 0.04)
         if len(pending) == 1:
             pending.pop(0)
-            return b""
+            return KEY_ESC
 
     if len(pending) >= 2 and pending[1] == ord("O"):
         if len(pending) < 3:
@@ -1497,7 +1523,7 @@ def run(host: str, port: int, player: dict[str, object], auto: bool) -> int:
             invited=saw_invite,
             followed=saw_follow,
             they_followed=saw_they_follow,
-            frozen=form_frozen(screen, sheet_lock),
+            frozen=play_paused(brain, frozen=form_frozen(screen, sheet_lock)),
         )
 
     def freeze_sheet(*, from_train: bool = False) -> None:
@@ -1515,8 +1541,6 @@ def run(host: str, port: int, player: dict[str, object], auto: bool) -> int:
         return use_local_input(screen, state, sheet_lock)
 
     def brain_send(text: str) -> None:
-        if text.strip().lower() == "train":
-            freeze_sheet(from_train=True)
         pacer.push_text(text)
 
     _pace_line = pacer.push_text
@@ -1547,10 +1571,11 @@ def run(host: str, port: int, player: dict[str, object], auto: bool) -> int:
             while True:
                 now = time.monotonic()
                 frozen = form_frozen(screen, sheet_lock)
+                paused = play_paused(brain, frozen=frozen)
                 gate.note(in_realm=state.in_realm, frozen=frozen, now=now)
                 settling = gate.quiet(now)
                 timeout = 0.03 if pacer.pending() else (
-                    0.4 if brain.hunting() and not frozen and not settling else None
+                    0.4 if brain.hunting() and not paused and not settling else None
                 )
                 if settling:
                     wait = min(0.5, max(0.05, gate.remain(now)))
@@ -1610,6 +1635,11 @@ def run(host: str, port: int, player: dict[str, object], auto: bool) -> int:
                             break
                         if key == b"":
                             continue
+                        if key == KEY_ESC:
+                            if brain.train_holding() or brain._want_train:
+                                brain.cancel_train()
+                                hint = "your keyboard"
+                            continue
                         if key in (b"\x03", b"\x1d"):
                             return 0
                         if drop_stray_keys(
@@ -1650,6 +1680,10 @@ def run(host: str, port: int, player: dict[str, object], auto: bool) -> int:
                                     hint = "following — leader owns movement"
                                 else:
                                     hint = f"{brain.mode}  ·  train"
+                            elif action == "pause":
+                                hint = "train hold  ·  you type"
+                            elif action == "idle":
+                                hint = "your keyboard"
                             else:
                                 thaw_sheet()
                                 hint = "your keyboard"
@@ -1686,13 +1720,15 @@ def run(host: str, port: int, player: dict[str, object], auto: bool) -> int:
                                         pacer.push_text(mud)
                                     continue
                                 if kind == "train":
-                                    if mud:
-                                        freeze_sheet(from_train=True)
-                                        pacer.push_text(mud)
-                                    elif brain._with_leader(state):
-                                        hint = "following — leader owns movement"
+                                    if brain.train_holding():
+                                        hint = "train hold  ·  you type"
+                                    elif brain._want_train:
+                                        if brain._with_leader(state):
+                                            hint = "following — leader owns movement"
+                                        else:
+                                            hint = f"{brain.mode}  ·  train"
                                     else:
-                                        hint = f"{brain.mode}  ·  train"
+                                        hint = "your keyboard"
                                     continue
                                 if mud:
                                     pacer.push_text(mud)
@@ -1714,12 +1750,13 @@ def run(host: str, port: int, player: dict[str, object], auto: bool) -> int:
 
                 in_play = pilot is None or pilot.phase == "play"
                 frozen = form_frozen(screen, sheet_lock)
+                paused = play_paused(brain, frozen=frozen)
                 now = time.monotonic()
                 gate.note(in_realm=state.in_realm, frozen=frozen, now=now)
                 settling = gate.quiet(now)
                 if (
                     in_play
-                    and not frozen
+                    and not paused
                     and not brain.bail
                     and (state.invited_by or state.following)
                 ):
@@ -1729,16 +1766,16 @@ def run(host: str, port: int, player: dict[str, object], auto: bool) -> int:
                         brain_send,
                         invited=bool(state.invited_by),
                         followed=bool(state.following),
-                        frozen=frozen,
+                        frozen=paused,
                     )
-                if in_play and not typed and not frozen and not settling:
+                if in_play and not typed and not paused and not settling:
                     if not pry.stuck:
                         brain.tick(state, brain_send, pacer.pending(), pacer.clear)
                         if (
                             not pacer.pending()
                             and not brain.bail
                             and maybe_ask_exp(
-                                state, brain_send, pending=False, frozen=frozen
+                                state, brain_send, pending=False, frozen=paused
                             )
                         ):
                             pass
@@ -1748,7 +1785,7 @@ def run(host: str, port: int, player: dict[str, object], auto: bool) -> int:
                         and pry.maybe_send(
                             state,
                             brain_send,
-                            frozen=frozen,
+                            frozen=paused,
                             settling=settling,
                             pending=False,
                         )
@@ -1784,6 +1821,7 @@ def run(host: str, port: int, player: dict[str, object], auto: bool) -> int:
                     state.exp_stale,
                     state.room,
                     brain._want_train,
+                    brain.train_holding(),
                     hint,
                     help_on,
                     hold_on,

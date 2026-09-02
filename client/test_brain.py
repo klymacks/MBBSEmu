@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 
-from .brain import HEAL_RATIO, Brain
+from .brain import HEAL_ASK, HEAL_RATIO, Brain
 from .parse import harvest_screen, parse_events, parse_line
 from .paths import (
     ARMOUR_ITEMS,
@@ -562,6 +562,13 @@ def test_matt_recasts_bless_after_combat_off() -> None:
     b._cast_at = time.monotonic() - 9
     b._last_cast = ""
     b.tick(state, sent.append, pending=False)
+    assert sent[-1] == "look"
+    assert "cast bless" not in sent
+    state.apply({"kind": "also_here", "mobs": []})
+    state.prompt_seq += 1
+    b._cast_at = time.monotonic() - 9
+    b._last_cast = ""
+    b.tick(state, sent.append, pending=False)
     assert sent[-1] == "cast bless"
 
 
@@ -1004,23 +1011,26 @@ def test_klymacks_asks_heal_once_when_following() -> None:
     state.apply({"kind": "also_here", "mobs": ["giant rat", "Matt"]})
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["say heal"]
+    assert sent == [HEAL_ASK]
+    assert HEAL_ASK == "heal me"
+    assert "say" not in sent[0]
     assert "cast" not in " ".join(sent)
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent.count("say heal") == 1
+    assert sent.count(HEAL_ASK) == 1
     assert sent[-1] == "attack giant rat"
 
     state.hp = 76
     state.prompt_seq += 1
     n = len(sent)
     b.tick(state, sent.append, pending=False)
-    assert sent[n:] == ["say heal"]
+    assert sent[n:] == [HEAL_ASK]
 
     state.hp = 81
     state.prompt_seq += 1
     n = len(sent)
     b.tick(state, sent.append, pending=False)
+    assert HEAL_ASK not in sent[n:]
     assert "say heal" not in sent[n:]
 
     solo = Brain(
@@ -1045,11 +1055,12 @@ def test_klymacks_asks_heal_once_when_following() -> None:
     lonely.mobs = ["giant rat"]
     alone: list[str] = []
     solo.tick(lonely, alone.append, pending=False)
+    assert HEAL_ASK not in alone
     assert "say heal" not in alone
     assert "cast" not in " ".join(alone)
 
 
-def test_matt_heals_on_say_heal() -> None:
+def test_matt_heals_on_heal_me() -> None:
     b = Brain(
         allowed=True,
         me="sysop Matt",
@@ -1074,8 +1085,8 @@ def test_matt_heals_on_say_heal() -> None:
     state.room = "Newhaven, Arena"
     state.scanned = True
     state.apply({"kind": "also_here", "mobs": ["giant rat", "Klymacks"]})
-    ev = parse_line('Klymacks says "heal"')
-    assert ev
+    ev = parse_line('Klymacks says "heal me"')
+    assert ev and ev["kind"] == "heal_ask"
     state.apply(ev)
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
@@ -1087,6 +1098,40 @@ def test_matt_heals_on_say_heal() -> None:
     b.tick(state, sent.append, pending=False)
     assert sent.count("cast minor healing klymacks") == 1
     assert sent[-1] == "attack giant rat"
+
+
+def test_matt_still_heals_on_old_say_heal() -> None:
+    """Spoken leftover `heal` / `say heal` still casts."""
+    b = Brain(
+        allowed=True,
+        me="sysop Matt",
+        alts="klymacks",
+        party_leader="Matt",
+        klass="paladin",
+        spell_list=["minor healing", "harm"],
+    )
+    b.gear_done = True
+    b.mode = "hunt"
+    b._in_camp = True
+    b._invited = True
+    state = WorldState()
+    state.followers = ["Klymacks"]
+    state.in_realm = True
+    state.hp = 81
+    state.max_hp = 100
+    state.max_hp_known = True
+    state.ma = 8
+    state.max_ma = 8
+    state.prompt_seq = 504
+    state.room = "Newhaven, Arena"
+    state.scanned = True
+    state.apply({"kind": "also_here", "mobs": ["giant rat", "Klymacks"]})
+    old = parse_line('Klymacks says "say heal"')
+    assert old and old["kind"] == "heal_ask"
+    state.apply(old)
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["cast minor healing klymacks"]
 
 
 def test_klymacks_never_heals_party() -> None:
@@ -4088,6 +4133,69 @@ def test_ninja_combat_off_looks_then_attacks_not_bs_loop() -> None:
     assert sent[n:] == []
 
 
+def test_klymacks_at_17_asks_heal_me() -> None:
+    """Live arena paste: HP 17 is at/below HEAL_RATIO — speak heal me, never say."""
+    b, state = _following_klymacks()
+    b.mode = "hunt"
+    state.hp = 17
+    state.max_hp = 28
+    state.max_hp_known = True
+    state.mobs = ["Matt", "kobold thief"]
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["heal me"]
+    assert "say" not in sent[0]
+
+
+def test_party_combat_off_leftover_kobold_no_sn() -> None:
+    """*Combat Off* then leftover kobold lunge: no sn, look/attack."""
+    b, state = _following_klymacks()
+    b.mode = "hunt"
+    b._attacking = "giant rat"
+    b._pit_fight = True
+    b._last_verb = "attack"
+    state.in_combat = True
+    state.hp = 17
+    state.max_hp = 28
+    state.max_hp_known = True
+    state.mobs = ["Matt", "giant rat", "kobold thief"]
+    for ev in parse_events("*Combat Off*"):
+        state.apply(ev)
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert "sn" not in sent
+    assert sent[0] == "heal me"
+    state.prompt_seq += 1
+    n = len(sent)
+    b.tick(state, sent.append, pending=False)
+    assert "sn" not in sent[n:]
+    for ev in parse_events("The fat kobold thief lunges at you!"):
+        state.apply(ev)
+    state.prompt_seq += 1
+    n = len(sent)
+    b.tick(state, sent.append, pending=False)
+    assert "sn" not in sent[n:]
+    assert sent[n:][-1] == "attack kobold thief"
+
+
+def test_matt_swings_leftover_kobold_after_combat_off() -> None:
+    """aa/hunt paladin: leftover lop after *Combat Off* — swing, do not idle."""
+    b, state = _matt_bless()
+    state.apply({"kind": "buff", "name": "bless", "on": True})
+    b._attacking = "giant rat"
+    state.in_combat = True
+    state.mobs = ["Klymacks", "giant rat", "kobold thief"]
+    for ev in parse_events("*Combat Off*"):
+        state.apply(ev)
+    for ev in parse_events("The fat kobold thief lunges at Klymacks!"):
+        state.apply(ev)
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert sent[-1] == "attack kobold thief"
+    assert "sn" not in sent
+    assert "cast bless" not in sent
+
+
 def test_sneak_wait_without_reply_retries() -> None:
     """No Attempting and no fail — wait. Do not dump `sn` every prompt."""
     b, state = _road_hunt("ninja", "always")
@@ -5828,7 +5936,11 @@ def test_go_train_walks_to_guild() -> None:
     state.prompt_seq += 1
     b._last_step = ""
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "train"
+    assert sent == ["n"]
+    assert "train" not in sent
+    assert b.train_holding()
+    assert b.mode == "manual"
+    assert b.next_action == "train hold"
     assert not b._want_train
 
 
@@ -5897,6 +6009,64 @@ def test_go_train_fights_first() -> None:
     assert b._want_train
 
 
+def test_request_train_at_guild_pauses_without_sending() -> None:
+    b, state = _road_hunt("paladin", "walk")
+    state.room = "Newhaven, Guild"
+    state.exits = ["s"]
+    b.request_train(state)
+    assert b.train_holding()
+    assert b.mode == "manual"
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert sent == []
+    assert b.next_action == "train hold"
+
+
+def test_train_hold_pauses_hunt_heal_look_party() -> None:
+    b, state = _road_hunt("ninja", "always", party_leader="Matt")
+    b._followed = True
+    b._joined = True
+    state.following = "Matt"
+    state.room = "Newhaven, Guild"
+    state.exits = ["s"]
+    state.hp = 10
+    state.mobs = ["giant rat"]
+    state.apply({"kind": "invited", "name": "Matt"})
+    b.begin_train_hold()
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    blob = " ".join(sent)
+    assert sent == []
+    assert "sn" not in blob
+    assert "bs" not in blob
+    assert "attack" not in blob
+    assert "look" not in blob
+    assert "follow" not in blob
+    assert "heal" not in blob
+    assert b.train_holding()
+    b.cancel_train()
+    assert not b.train_holding()
+    assert b.mode == "manual"
+    assert b.next_action == "manual"
+
+
+def test_train_hold_clears_after_trained_or_leave() -> None:
+    b, state = _road_hunt("paladin", "walk")
+    state.room = "Newhaven, Guild"
+    state.exits = ["s"]
+    b.begin_train_hold()
+    state.apply({"kind": "trained"})
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert not b.train_holding()
+    b.begin_train_hold()
+    state.room = "Newhaven, Narrow Road"
+    state.exits = ["n", "e", "w", "d"]
+    state.trained = False
+    b.tick(state, sent.append, pending=False)
+    assert not b.train_holding()
+
+
 def test_does_not_aid_self() -> None:
     b, state = _klymacks_arena()
     state.apply({"kind": "mortal", "name": "Klymacks"})
@@ -5936,7 +6106,11 @@ if __name__ == "__main__":
     test_matt_skips_heal_at_27_of_28()
     test_matt_heals_at_80_percent_not_above()
     test_klymacks_asks_heal_once_when_following()
-    test_matt_heals_on_say_heal()
+    test_matt_heals_on_heal_me()
+    test_matt_still_heals_on_old_say_heal()
+    test_klymacks_at_17_asks_heal_me()
+    test_party_combat_off_leftover_kobold_no_sn()
+    test_matt_swings_leftover_kobold_after_combat_off()
     test_matt_skips_party_heal_on_small_hit()
     test_matt_party_heals_after_chips()
     test_matt_skips_heal_when_max_unknown()
@@ -6064,6 +6238,9 @@ if __name__ == "__main__":
     test_party_may_not_sneak_paste_then_rat_attacks()
     test_party_hidden_then_rat_backstabs()
     test_ninja_combat_off_looks_then_attacks_not_bs_loop()
+    test_klymacks_at_17_asks_heal_me()
+    test_party_combat_off_leftover_kobold_no_sn()
+    test_matt_swings_leftover_kobold_after_combat_off()
     test_sneak_wait_without_reply_retries()
     test_road_kill_breaks_before_sn()
     test_following_leader_mortal_may_sneak()
@@ -6150,4 +6327,7 @@ if __name__ == "__main__":
     test_go_train_manual_one_shot()
     test_go_train_following_does_not_move()
     test_go_train_fights_first()
+    test_request_train_at_guild_pauses_without_sending()
+    test_train_hold_pauses_hunt_heal_look_party()
+    test_train_hold_clears_after_trained_or_leave()
     print("ok")

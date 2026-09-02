@@ -13,6 +13,8 @@ CHARLIST = (
 )
 MAGIC = b"\x13TheDraw FONTS file"
 _TD_TO_ANSI = (0, 4, 2, 6, 1, 5, 3, 7)
+# Infinity ice: white / grey / cyan / dark blue / black. No green, no acid.
+_ICE_ANSI = (0, 4, 6, 7, 4, 4, 6, 7)
 
 
 class Glyph:
@@ -92,7 +94,11 @@ def _read_glyph(payload: bytes, off: int) -> Glyph:
 def pack_color(color: int) -> tuple[int, int, bool]:
     fg16 = color & 0x0F
     bg = (color >> 4) & 0x07
-    return (_TD_TO_ANSI[fg16 & 7], _TD_TO_ANSI[bg], fg16 >= 8)
+    return (
+        _ICE_ANSI[_TD_TO_ANSI[fg16 & 7]],
+        _ICE_ANSI[_TD_TO_ANSI[bg]],
+        fg16 >= 8,
+    )
 
 
 def word_size(font: ColorFont, word: str, spacing: int) -> tuple[int, int]:
@@ -166,8 +172,8 @@ def _sauce_plate(screen: Any) -> None:
     label = " FINN'S REALM "
     pack = " 1.11p "
     tag = " klymacks "
-    _puts(screen, 0, 2, label, 3, 0, True)
-    _puts(screen, 0, 2 + len(label), pack, 7, 0, False)
+    _puts(screen, 0, 2, label, 7, 0, True)
+    _puts(screen, 0, 2 + len(label), pack, 6, 0, False)
     _puts(screen, 0, cols - len(tag) - 2, tag, 6, 0, True)
 
 
@@ -207,7 +213,7 @@ def _ice_hook(screen: Any) -> None:
         (19, 66, "▓", 4, False),
         (20, 67, "▀", 4, True),
         (20, 68, "▄", 6, True),
-        (20, 69, "·", 6, True),
+        (20, 69, "·", 7, True),
         (21, 66, "▀", 4, False),
         (21, 67, "▀", 4, False),
     )
@@ -230,11 +236,11 @@ def _sparkles(screen: Any) -> None:
             _put(screen, y, x, ch, 6, 0, True, overlay=False)
 
 
-def _amber_ticks(screen: Any) -> None:
+def _ice_ticks(screen: Any) -> None:
     """Two quiet drips off the plate — nod to G/0, not a throw-up."""
-    _put(screen, 1, 3, "▄", 3, 0, True, overlay=False)
-    _put(screen, 2, 3, "▓", 3, 0, False, overlay=False)
-    _put(screen, 1, 76, "▄", 3, 0, True, overlay=False)
+    _put(screen, 1, 3, "▄", 6, 0, True, overlay=False)
+    _put(screen, 2, 3, "▓", 4, 0, False, overlay=False)
+    _put(screen, 1, 76, "▄", 6, 0, True, overlay=False)
 
 
 def paint(screen: Any, host: str, port: int, *, kind: str = "client") -> None:
@@ -255,7 +261,7 @@ def paint(screen: Any, host: str, port: int, *, kind: str = "client") -> None:
     blit_tdf(screen, y2, x2, razors, realm, 1)
     _ice_hook(screen)
     _sparkles(screen)
-    _amber_ticks(screen)
+    _ice_ticks(screen)
     if kind == "board":
         return
     _puts(screen, 22, max(0, (screen.cols - 25) // 2), "f i n n ' s     r e a l m", 6, 0, True)

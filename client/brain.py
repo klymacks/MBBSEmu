@@ -11,10 +11,11 @@ REST_RATIO = 0.60
 # klymacks ninja party (following Matt): sit-down rest under 75%.
 PARTY_REST_RATIO = 0.75
 REST_ABS = 12
-# Self-heal and party `say heal` at this ratio or below. Sit-down rest stays on REST_RATIO
-# (or PARTY_REST_RATIO while a ninja is following).
+# Self-heal and party `heal me` (spoken — not the `health` command) at this
+# ratio or below. Sit-down rest stays on REST_RATIO (or PARTY_REST_RATIO
+# while a ninja is following).
 HEAL_RATIO = 0.80
-HEAL_ASK = "say heal"
+HEAL_ASK = "heal me"
 # Last-ditch harm on a living target already in the fight. Trash is never a boss.
 HARM_DESPERATE = 0.30
 _ARENA_TRASH = paths.LOPS + ("bug",)
@@ -168,6 +169,7 @@ class Brain:
         self._drag_on = False
         self._recovering = False
         self._want_train = False
+        self._train_hold = False
         self._asked_heal = False
         self._asked_heal_hp: int | None = None
 
@@ -223,6 +225,8 @@ class Brain:
         self.next_action = self.mode
         self._asked_health = False
         self._panic_until = 0.0
+        self._want_train = False
+        self._train_hold = False
         if self.mode == "gear":
             self._await_inv = True
             self._pry_sent = False
@@ -271,6 +275,7 @@ class Brain:
         self._pending_step = ""
         self._panic_until = 0.0
         self._want_train = False
+        self._train_hold = False
         self._clear_rescue()
 
     def hunting(self) -> bool:
@@ -634,6 +639,7 @@ class Brain:
         self._panic_until = time.monotonic() + PANIC_HOLD
         self.next_action = "panic"
         self._want_train = False
+        self._train_hold = False
         self._cmd(send, "break", state)
         if self._arm_leader_rescue(state) or self._rescue:
             self._panic_until = 0.0
@@ -821,7 +827,7 @@ class Brain:
         return found
 
     def _ally_heal_gate(self) -> int:
-        """Damage that puts assumed ally HP at or below HEAL_RATIO. Backup to a `say heal`."""
+        """Damage that puts assumed ally HP at or below HEAL_RATIO. Backup to `heal me`."""
         return max(1, ALLY_HP_ASSUME - int(ALLY_HP_ASSUME * HEAL_RATIO))
 
     def _ally_asked(self, state: WorldState, name: str) -> bool:
@@ -887,7 +893,7 @@ class Brain:
             self._clear_heal_ask()
 
     def _try_ask_heal(self, state: WorldState, send) -> bool:
-        """Follower with no heal spell: `say heal` once at HEAL_RATIO or below."""
+        """Follower with no heal spell: speak `heal me` once at HEAL_RATIO or below."""
         if self._spell("heal"):
             return False
         if not self._with_leader(state):
@@ -964,6 +970,8 @@ class Brain:
             return False
         if _trusted_live(state) or paths.lop_in(state.mobs):
             return False
+        if self._want_look:
+            return False
         if state.blessed:
             return False
         if not spells.can_cast(name, state.level):
@@ -1028,16 +1036,37 @@ class Brain:
         self._cmd(send, "exp", state)
         return True
 
-    def request_train(self) -> None:
-        """Opt in to walk to the Newhaven guild and train. No takeover."""
+    def train_holding(self) -> bool:
+        """Brain paused at the trainer. Keyboard stays with the player."""
+        return self._train_hold
+
+    def begin_train_hold(self) -> None:
+        """Stop hunt/sneak/aa/party/gear/heal/look. Do not type train or stats."""
+        self.takeover()
+        self._train_hold = True
+        self.next_action = "train hold"
+
+    def request_train(self, state: WorldState | None = None) -> None:
+        """Walk to the Newhaven guild, then pause. Never types train or stats."""
+        if state is not None and paths.is_trainer(state.room):
+            self.begin_train_hold()
+            return
         self._want_train = True
+        self._train_hold = False
         self.next_action = "train"
 
     def cancel_train(self) -> None:
+        was_hold = self._train_hold
         self._want_train = False
+        self._train_hold = False
+        if was_hold:
+            self.next_action = "manual"
 
     def _go_train(self, state: WorldState, send) -> bool:
-        """Walk to the guild and type `train`. Leader owns movement."""
+        """Walk to the guild and wait. Leader owns movement. Do not spend points."""
+        if self._train_hold:
+            self.next_action = "train hold"
+            return True
         if not self._want_train:
             return False
         if state.in_combat or self._attacking or self._lops_here(state):
@@ -1049,8 +1078,7 @@ class Brain:
                 self._sitting = False
                 self._cmd(send, "break", state)
                 return True
-            self._want_train = False
-            self._cmd(send, "train", state)
+            self.begin_train_hold()
             return True
         if self._with_leader(state):
             return False
@@ -1079,7 +1107,15 @@ class Brain:
         if not self.allowed:
             return
         if not state.in_realm:
+            if self._train_hold:
+                self.cancel_train()
             return
+        if self._train_hold:
+            if state.trained or not paths.is_trainer(state.room):
+                self.cancel_train()
+            else:
+                self.next_action = "train hold"
+                return
         if self.mode == "manual":
             if pending:
                 return

@@ -100,7 +100,7 @@ class WorldState:
     ally_hurt: dict[str, str] = field(default_factory=dict)
     # lowercase given name -> damage seen since last heal / they left.
     ally_dmg: dict[str, int] = field(default_factory=dict)
-    # lowercase given name -> they asked for a heal (`say heal`).
+    # lowercase given name -> they asked for a heal (`heal me`).
     heal_asks: dict[str, str] = field(default_factory=dict)
     # From `exp` / train. Max HP/MA stay put until a level or train.
     level: int | None = None

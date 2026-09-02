@@ -666,7 +666,7 @@ def test_f11_is_sheet_does_not_takeover() -> None:
     assert not pacer.pending()
 
 
-def test_toggle_sheet_sends_train_at_guild() -> None:
+def test_toggle_sheet_pauses_at_guild() -> None:
     state = WorldState()
     state.in_realm = True
     state.room = "Newhaven, Guild"
@@ -675,8 +675,10 @@ def test_toggle_sheet_sends_train_at_guild() -> None:
     action, mud = _CLIENT.toggle_sheet(
         brain, state, locked=False, on_form=False
     )
-    assert action == "lock"
-    assert mud == "train"
+    assert action == "pause"
+    assert mud is None
+    assert brain.train_holding()
+    assert brain.mode == "manual"
     assert not brain._want_train
 
 
@@ -709,6 +711,28 @@ def test_toggle_sheet_unlocks_and_cancels_walk() -> None:
         brain, state, locked=False, on_form=True
     )
     assert action == "unlock"
+
+
+def test_toggle_sheet_cancels_walk_and_hold() -> None:
+    state = WorldState()
+    state.in_realm = True
+    state.room = "Newhaven, Narrow Road"
+    brain = Brain(allowed=True, klass="ninja")
+    brain.request_train()
+    action, mud = _CLIENT.toggle_sheet(
+        brain, state, locked=False, on_form=False
+    )
+    assert action == "idle"
+    assert mud is None
+    assert not brain._want_train
+    state.room = "Newhaven, Guild"
+    brain.begin_train_hold()
+    action, mud = _CLIENT.toggle_sheet(
+        brain, state, locked=False, on_form=False
+    )
+    assert action == "idle"
+    assert not brain.train_holding()
+    assert brain.mode == "manual"
 
 
 def test_sheet_lock_keeps_fsd_keys_with_leftover_hp() -> None:
@@ -791,6 +815,9 @@ def test_help_overlay_lists_keys() -> None:
     assert "F9          join / join off" in raw
     assert "F10         copy / held" in raw
     assert "F11         train / live" in raw
+    assert "train hold" in raw
+    assert "brain paused" in raw
+    assert "freezes status on the sheet" not in raw
     for n in range(1, 12):
         assert _CLIENT.fkey_label(n, style="help") in raw
     assert "peek - hunter stays on" in raw
@@ -884,7 +911,9 @@ def test_paint_splash_is_graffiti() -> None:
     assert "klymacks" in demo_text
     assert "KLYMACKS" not in demo_text
     assert "Klymacks" not in demo_text
+    assert {c.fg for c in ice} <= {0, 4, 6, 7}
     assert {c.fg for c in ice} & {4, 6, 7}
+    assert 2 not in {c.fg for row in demo.buf for c in row}
     assert any(c.bold for c in ice)
 
 
@@ -1161,6 +1190,35 @@ def test_chrome_tips_fit() -> None:
     )
 
 
+def test_play_paused_is_train_hold_not_copy() -> None:
+    brain = Brain(allowed=True, klass="ninja")
+    assert not _CLIENT.play_paused(brain)
+    assert _CLIENT.play_paused(brain, frozen=True)
+    brain.begin_train_hold()
+    assert _CLIENT.play_paused(brain)
+    state = WorldState()
+    state.in_realm = True
+    screen = _CLIENT.AnsiScreen()
+    assert _CLIENT.use_local_input(screen, state)
+    asked: list[str] = []
+    assert not _CLIENT.maybe_ask_exp(state, asked.append, frozen=True)
+    sent: list[str] = []
+    state.apply({"kind": "invited", "name": "Matt"})
+    _CLIENT.maybe_auto_party(
+        state,
+        brain,
+        sent.append,
+        invited=True,
+        followed=False,
+        frozen=True,
+    )
+    assert sent == []
+
+
+def test_lone_esc_is_key_esc() -> None:
+    assert _read(b"\x1b") == _CLIENT.KEY_ESC
+
+
 def _plain_bar(bar: bytes) -> str:
     return _CLIENT._SGR_RE.sub("", bar.decode("utf-8", "replace"))
 
@@ -1245,13 +1303,25 @@ def test_handle_client_line_train() -> None:
     kind, mud = _CLIENT.handle_client_line("look", brain, state)
     assert kind == "game" and mud == "look"
     assert not brain._want_train
-    brain.request_train()
+    kind, mud = _CLIENT.handle_client_line("train", brain, state)
+    assert kind == "train" and brain._want_train
+    kind, mud = _CLIENT.handle_client_line("train", brain, state)
+    assert kind == "train" and mud is None
+    assert not brain._want_train
     state.room = "Newhaven, Guild"
     kind, mud = _CLIENT.handle_client_line("train", brain, state)
-    assert kind == "train" and mud == "train"
-    assert not brain._want_train
+    assert kind == "train" and mud is None
+    assert brain.train_holding()
+    assert brain.mode == "manual"
+    kind, mud = _CLIENT.handle_client_line("train", brain, state)
+    assert kind == "game" and mud == "train"
+    assert brain.train_holding()
+    kind, mud = _CLIENT.handle_client_line("str", brain, state)
+    assert kind == "game" and mud == "str"
+    assert brain.train_holding()
     kind, mud = _CLIENT.handle_client_line("go train", brain, state)
-    assert kind == "train" and mud == "train"
+    assert kind == "train" and mud is None
+    assert not brain.train_holding()
 
 
 def test_handle_client_line_aa() -> None:
@@ -1394,6 +1464,25 @@ def test_chrome_shows_exp_and_train() -> None:
     assert "SHEET" in locked
     assert "F11 live" in locked
     assert "no health/exp/hunt" in locked
+    hold_brain = Brain(allowed=True, klass="ninja")
+    hold_brain.begin_train_hold()
+    held = _plain_bar(
+        _CLIENT.chrome(
+            30,
+            _CLIENT.AnsiScreen(),
+            "x",
+            "127.0.0.1",
+            state,
+            hold_brain,
+        )
+    )
+    assert "TRAIN HOLD" in held
+    assert "brain paused" in held
+    assert "you type" in held
+    assert "F10 copy" not in held
+    assert "F10 held" not in held
+    assert "SHEET" not in held
+    assert "> " in held
 
 
 def test_chrome_shows_hp_and_ma_over_max() -> None:
@@ -1486,6 +1575,7 @@ if __name__ == "__main__":
     test_f1_sequences()
     test_f3_to_f8_sequences()
     test_esc_o_waits()
+    test_lone_esc_is_key_esc()
     test_peek_commands()
     test_peek_does_not_stop_hunter()
     test_peek_all_keys_queue()
@@ -1515,9 +1605,10 @@ if __name__ == "__main__":
     test_f10_is_hold_does_not_takeover()
     test_f10_hold_outside_realm()
     test_f11_is_sheet_does_not_takeover()
-    test_toggle_sheet_sends_train_at_guild()
+    test_toggle_sheet_pauses_at_guild()
     test_toggle_sheet_walks_when_not_at_guild()
     test_toggle_sheet_unlocks_and_cancels_walk()
+    test_toggle_sheet_cancels_walk_and_hold()
     test_sheet_lock_keeps_fsd_keys_with_leftover_hp()
     test_hold_snapshot_writes_utf8_grid()
     test_copy_hold_clipboard_returns_bool()
@@ -1541,6 +1632,7 @@ if __name__ == "__main__":
     test_drop_stray_keys_during_login_not_on_sheet()
     test_f7_does_not_arm_hunt_before_realm()
     test_chrome_tips_fit()
+    test_play_paused_is_train_hold_not_copy()
     test_chrome_hp_tone()
     test_handle_client_line_train()
     test_handle_client_line_aa()

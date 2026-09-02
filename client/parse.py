@@ -168,6 +168,7 @@ SAY_RE = re.compile(
     re.IGNORECASE,
 )
 _HEAL_ASK = frozenset({"heal", "heals", "healing", "mihe"})
+_HEAL_ASK_SKIP = frozenset({"health", "hea"})
 SALE_RE = re.compile(r"for sale|shopkeeper|what would you like to buy", re.IGNORECASE)
 SOLD_RE = re.compile(r"^you sold (?P<item>.+?) for ", re.IGNORECASE)
 ALREADY_WORN_RE = re.compile(
@@ -355,8 +356,17 @@ def _said_aim(msg: str) -> str:
 
 
 def _is_heal_ask(msg: str) -> bool:
+    """Spoken `heal me` (and old `heal` / `say heal`). Never `health` / `hea`."""
     word = msg.lower().strip().strip("\"'.,!;:")
+    if not word:
+        return False
+    if word.startswith("say "):
+        word = word[4:].strip()
     first = word.split()[0] if word else ""
+    if first in _HEAL_ASK_SKIP or word.startswith("health"):
+        return False
+    if word == "heal me" or word.startswith("heal me"):
+        return True
     return first in _HEAL_ASK
 
 
