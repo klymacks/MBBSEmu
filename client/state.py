@@ -58,6 +58,16 @@ class WorldState:
     in_realm: bool = False
     dark: bool = False
     geared: bool = False
+    inventory: list[str] = field(default_factory=list)
+    extras: list[str] = field(default_factory=list)
+    worn: list[str] = field(default_factory=list)
+    already_worn: str = ""
+    last_sold: str = ""
+    inv_seq: int = 0
+    shop_vague: bool = False
+    learned: bool = False
+    spell_skip: bool = False
+    flooded: bool = False
     needs_scan: bool = False
     scanned: bool = False
     look_scan: bool = False
@@ -332,8 +342,42 @@ class WorldState:
                 self.needs_scan = True
             return
         if kind == "inventory":
-            blob = str(event.get("text") or "").lower()
-            self.geared = "(weapon" in blob or "weapon hand" in blob
+            blob = str(event.get("text") or "")
+            low = blob.lower()
+            self.geared = "(weapon" in low or "weapon hand" in low
+            items = event.get("items")
+            extras = event.get("extras")
+            worn = event.get("worn")
+            if isinstance(items, list):
+                self.inventory = [str(x).lower() for x in items]
+            elif blob:
+                self.inventory = paths.inventory_names(blob)
+            if isinstance(extras, list):
+                self.extras = [str(x).lower() for x in extras]
+            elif blob:
+                self.extras = paths.inventory_extras(blob)
+            if isinstance(worn, list):
+                self.worn = [str(x).lower() for x in worn]
+            elif blob:
+                self.worn = paths.inventory_worn(blob)
+            self.inv_seq += 1
+            return
+        if kind == "sold":
+            item = str(event.get("item") or "").strip().lower()
+            self.last_sold = item
+            self.shop_vague = False
+            return
+        if kind == "already_worn":
+            item = str(event.get("item") or "").strip().lower()
+            self.already_worn = item
+            if item and item not in self.worn:
+                self.worn.append(item)
+            return
+        if kind == "flood":
+            self.flooded = True
+            return
+        if kind == "shop_vague":
+            self.shop_vague = True
             return
         if kind == "arrive":
             name = str(event.get("name") or "")
@@ -366,6 +410,14 @@ class WorldState:
             self.in_shop = True
             return
         if kind == "bought":
+            self.shop_vague = False
+            return
+        if kind == "learned":
+            self.learned = True
+            self.spell_skip = False
+            return
+        if kind == "spell_skip":
+            self.spell_skip = True
             return
         if kind == "room":
             title = str(event.get("title") or "")

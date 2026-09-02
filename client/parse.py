@@ -48,6 +48,10 @@ EventKind = Literal[
     "left",
     "trained",
     "level",
+    "flood",
+    "shop_vague",
+    "already_worn",
+    "sold",
 ]
 
 PROMPT_RE = re.compile(
@@ -139,7 +143,8 @@ LEAVE_RE = re.compile(
     re.IGNORECASE,
 )
 PC_ARRIVE_RE = re.compile(
-    r"^([A-Z][A-Za-z]{1,14}) (?:just arrived|walks into the room|walks in|has just arrived)\b",
+    r"^([A-Z][A-Za-z]{1,14}) (?:just arrived|walks into the room|walks in|"
+    r"has just arrived|just entered the Realm)\b",
     re.IGNORECASE,
 )
 PC_LEAVE_RE = re.compile(
@@ -164,6 +169,15 @@ SAY_RE = re.compile(
 )
 _HEAL_ASK = frozenset({"heal", "heals", "healing", "mihe"})
 SALE_RE = re.compile(r"for sale|shopkeeper|what would you like to buy", re.IGNORECASE)
+SOLD_RE = re.compile(r"^you sold (?P<item>.+?) for ", re.IGNORECASE)
+ALREADY_WORN_RE = re.compile(
+    r"you do not have (?P<item>.+?) left unequipped",
+    re.IGNORECASE,
+)
+_INV_END_RE = re.compile(
+    r"^(?:you have no keys|you have .+ keys?|wealth:|encumbrance:|\[hp=)",
+    re.IGNORECASE,
+)
 INVITE_YOU_RE = re.compile(
     r"^(.+?) has invited you to follow",
     re.IGNORECASE,
@@ -173,7 +187,7 @@ YOU_INVITE_RE = re.compile(
     re.IGNORECASE,
 )
 NOW_FOLLOW_RE = re.compile(
-    r"^You are now following (.+?)\.?$",
+    r"^You are(?: now)? following (.+?)\.?$",
     re.IGNORECASE,
 )
 THEY_FOLLOW_RE = re.compile(
@@ -325,7 +339,7 @@ def _aided_event(raw: str) -> dict[str, object] | None:
 
 
 _SAID_SWING_RE = re.compile(
-    r"^(?:attack|ttack|tack|at|bs|a)\s+(.+)$",
+    r"^(?:attack|ttack|tack|kill|at|bs|a|k)\s+(.+)$",
     re.IGNORECASE,
 )
 
@@ -531,8 +545,19 @@ def parse_line(line: str) -> dict[str, object] | None:
         return ev
     if COMBAT_RE.search(raw):
         return {"kind": "combat"}
-    if raw.startswith("You are carrying") or "(weapon hand)" in raw.lower():
-        return {"kind": "inventory", "text": raw}
+    if _is_inventory_line(raw):
+        entries = paths.inventory_entries(raw)
+        return {
+            "kind": "inventory",
+            "text": raw,
+            "items": [name for name, _worn in entries],
+            "extras": [name for name, worn in entries if not worn],
+            "worn": [name for name, worn in entries if worn],
+        }
+    worn = ALREADY_WORN_RE.search(raw)
+    if worn or "already worn" in low or "already wearing" in low:
+        item = worn.group("item").strip().lower() if worn else ""
+        return {"kind": "already_worn", "item": item}
 
     if "you feel lucky" in low:
         return {"kind": "buff", "name": "bless", "on": True}
@@ -548,8 +573,54 @@ def parse_line(line: str) -> dict[str, object] | None:
         or ("have not learned" in low and "spell" in low)
     ):
         return {"kind": "cast_fail", "reason": "unknown"}
+    if "already know" in low and "spell" in low:
+        return {"kind": "learned", "already": True}
+    if (
+        "have learned" in low
+        or "you memorize" in low
+        or ("memorize" in low and "spell" in low)
+        or ("now know" in low and "spell" in low)
+    ):
+        return {"kind": "learned"}
+    if (
+        "cannot cast" in low
+        or "can't cast" in low
+        or "can not cast" in low
+        or ("not high enough" in low and "learn" not in low)
+        or (
+            "too low" in low
+            and any(word in low for word in ("level", "cast", "spell"))
+        )
+        or (
+            "not yet" in low
+            and any(word in low for word in ("cast", "spell", "bless", "level"))
+        )
+        or ("fail" in low and "bless" in low)
+    ):
+        return {"kind": "cast_fail", "reason": "level"}
+    if (
+        "not high enough" in low
+        or "cannot learn" in low
+        or "can't learn" in low
+        or "can not learn" in low
+        or "can't afford" in low
+        or "cannot afford" in low
+        or "can not afford" in low
+        or (
+            ("you can't" in low or "you cannot" in low)
+            and any(word in low for word in ("scroll", "afford", "learn", "buy"))
+        )
+    ):
+        return {"kind": "spell_skip"}
     if "you rest" in low or "you sit down" in low or "you are now resting" in low or "feeling refreshed" in low:
         return {"kind": "rest"}
+    if "typing too quickly" in low or "slow down for a few seconds" in low:
+        return {"kind": "flood"}
+    if "more specific" in low:
+        return {"kind": "shop_vague"}
+    sold = SOLD_RE.search(raw)
+    if sold:
+        return {"kind": "sold", "item": sold.group("item").strip().lower()}
     if SALE_RE.search(raw) or "the shop sells" in low:
         return {"kind": "shop"}
     if low.startswith("you buy") or "you just bought" in low or "sold to you" in low:
@@ -608,7 +679,7 @@ GLUE_RE = re.compile(
     r"|(?=[A-Z][a-z]{1,14} is mortally wounded)|(?=too afraid)"
     r"|(?=You are bleeding)|(?=[A-Z][a-z]{1,14} is bleeding)"
     r"|(?=You are now dragging)|(?=You are no longer following)"
-    r"|(?=You have invited )|(?=You are now following )"
+    r"|(?=You have invited )|(?=You are now following )|(?=You are following )"
     r"|(?=You say )|(?=[A-Z][a-z]{1,14} says?,? )"
     r"|(?=You feel lucky)|(?=You cast bless)|(?=The effects of bless wear off)"
     r"|(?=You swipe at )|(?=The [a-z].{0,48}dissolves into)"
@@ -625,6 +696,7 @@ GLUE_RE = re.compile(
     r"dissolves into|collapses,|lunges at |snaps at |lashes at |flails at |"
     r"claws at |swipes at |whips |walks out))"
     r"|(?=[A-Z][a-z]{1,14} just arrived)|(?=[A-Z][a-z]{1,14} just left)"
+    r"|(?=[A-Z][a-z]{1,14} just entered the Realm)"
 )
 _CSI = re.compile(rb"\x1b\[[0-9;?]*[ -/]*[@-~]|\x1b[@-_]")
 _FLUSH_KINDS = frozenset(
@@ -660,6 +732,12 @@ _FLUSH_KINDS = frozenset(
         "left",
         "trained",
         "level",
+        "flood",
+        "shop_vague",
+        "already_worn",
+        "sold",
+        "learned",
+        "spell_skip",
     }
 )
 _SCREEN_KINDS = frozenset(
@@ -689,8 +767,58 @@ _SCREEN_KINDS = frozenset(
         "left",
         "trained",
         "level",
+        "flood",
+        "shop_vague",
+        "already_worn",
+        "inventory",
+        "sold",
+        "learned",
+        "spell_skip",
     }
 )
+
+
+def _is_inv_start(raw: str) -> bool:
+    return raw.lower().startswith("you are carrying")
+
+
+def _inv_block_end(raw: str) -> bool:
+    return bool(_INV_END_RE.match(raw.strip()))
+
+
+def _is_inventory_line(raw: str) -> bool:
+    if _is_inv_start(raw) or "(weapon hand)" in raw.lower():
+        return True
+    return paths.has_inv_slot(raw)
+
+
+def hold_inventory(held: list[str], lines: list[str]) -> tuple[list[str], list[str]]:
+    """Join wrapped `i` rows. Return (emit now, still held across feeds)."""
+    out: list[str] = []
+    buf = [part.strip() for part in held if part.strip()]
+    for line in lines:
+        raw = line.strip()
+        if buf:
+            if _inv_block_end(raw):
+                out.append(" ".join(buf))
+                buf = []
+                out.append(line)
+            else:
+                buf.append(raw)
+            continue
+        if _is_inv_start(raw):
+            buf.append(raw)
+            continue
+        out.append(line)
+    return out, buf
+
+
+def stitch_inventory_lines(lines: list[str]) -> list[str]:
+    """Join wrapped `You are carrying` / `i` rows into one carrying line."""
+    out, leftover = hold_inventory([], lines)
+    if leftover:
+        out.append(" ".join(leftover))
+    return out
 
 
 def unglue(text: str) -> str:
@@ -701,8 +829,10 @@ def unglue(text: str) -> str:
 
 def parse_events(text: str) -> list[dict[str, object]]:
     events: list[dict[str, object]] = []
-    for chunk in unglue(text).split("\n"):
-        piece = chunk.strip()
+    chunks = stitch_inventory_lines(
+        [chunk.strip() for chunk in unglue(text).split("\n") if chunk.strip()]
+    )
+    for piece in chunks:
         if not piece:
             continue
         m = PROMPT_RE.search(piece)
@@ -729,7 +859,7 @@ def harvest_screen(text: str, seen: set[str]) -> list[dict[str, object]]:
         if old not in on_screen:
             seen.discard(old)
     events: list[dict[str, object]] = []
-    for line in rows:
+    for line in stitch_inventory_lines(rows):
         if line in seen:
             continue
         fresh = []
@@ -791,6 +921,11 @@ def events_from_payload(data: bytes) -> list[dict[str, object]]:
             "left",
             "trained",
             "level",
+            "flood",
+            "shop_vague",
+            "inventory",
+            "already_worn",
+            "sold",
         }
     )
     return [e for e in parse_events(strip_csi(data)) if e.get("kind") in keep]

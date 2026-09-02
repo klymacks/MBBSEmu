@@ -117,6 +117,117 @@ ARMOUR_ITEMS = (
     "padded boots",
     "padded gloves",
 )
+STARTER_GEAR = (*ARMOUR_ITEMS, STARTER_WEAPON, STARTER_LIGHT)
+_INV_SLOT_RE = re.compile(r"\s*\(([^)]*)\)\s*$")
+_INV_ARTICLE_RE = re.compile(r"^(?:a|an|the)\s+", re.IGNORECASE)
+_INV_CARRY_RE = re.compile(r"^you are carrying:?\s*", re.IGNORECASE)
+_INV_QTY_RE = re.compile(r"^(\d+)\s+")
+# MajorMUD `i` wraps at 80 cols. Slots mark worn copies; bare names are extras.
+_INV_SLOT_NAME_RE = re.compile(
+    r"\((?:torso|head|legs|feet|hands|arms|neck|back|waist|wrist|finger|"
+    r"ears?|face|eyes?|weapon hand|off-?hand|shield)\)",
+    re.I,
+)
+
+
+def inventory_entries(raw: str) -> list[tuple[str, bool]]:
+    """Split a carrying line into (name, worn). `(Torso)` / `(Head)` / etc = worn."""
+    text = _INV_CARRY_RE.sub("", raw.strip())
+    found: list[tuple[str, bool]] = []
+    for part in text.split(","):
+        slot = _INV_SLOT_RE.search(part)
+        name = _INV_SLOT_RE.sub("", part).strip()
+        name = _INV_ARTICLE_RE.sub("", name).strip().lower()
+        qty = 1
+        counted = _INV_QTY_RE.match(name)
+        if counted:
+            qty = max(1, int(counted.group(1)))
+            name = name[counted.end() :].strip()
+        if name and name not in {"you are carrying", "nothing"}:
+            worn = bool(slot and (slot.group(1) or "").strip())
+            copies = 1 if worn else qty
+            found.extend((name, worn) for _ in range(copies))
+    return found
+
+
+def inventory_names(raw: str) -> list[str]:
+    """Split a carrying line into item names (slots stripped)."""
+    return [name for name, _worn in inventory_entries(raw)]
+
+
+def inventory_extras(raw: str) -> list[str]:
+    """Unequipped copies — bare names on the `i` line, no (Slot)."""
+    return [name for name, worn in inventory_entries(raw) if not worn]
+
+
+def inventory_worn(raw: str) -> list[str]:
+    return [name for name, worn in inventory_entries(raw) if worn]
+
+
+def has_inv_slot(raw: str) -> bool:
+    """True when a carrying line names a worn slot like (Torso) or (Head)."""
+    return bool(_INV_SLOT_NAME_RE.search(raw))
+
+
+def _starter_match(low: str, name: str) -> bool:
+    return low == name or low.endswith(name) or name in low.split(",")
+
+
+def extra_starter(
+    items: list[str],
+    extras: list[str] | None = None,
+    skip: set[str] | None = None,
+    worn: list[str] | None = None,
+) -> str | None:
+    """One spare starter item to sell. Last `i` extras win; stacks stay sellable."""
+    banned = {n.lower() for n in skip} if skip else set()
+    worn_set = {n.strip().lower() for n in worn} if worn else set()
+    counts: dict[str, int] = {}
+    for raw in items:
+        low = raw.strip().lower()
+        for name in STARTER_GEAR:
+            if name in banned:
+                continue
+            if _starter_match(low, name):
+                counts[name] = counts.get(name, 0) + 1
+                break
+    if extras:
+        for raw in extras:
+            low = raw.strip().lower()
+            for name in STARTER_GEAR:
+                if name in banned:
+                    continue
+                if not _starter_match(low, name):
+                    continue
+                # Just-bought and not yet worn is not an extra to dump.
+                if worn is None or name in worn_set or counts.get(name, 0) >= 2:
+                    return name
+    for name, n in counts.items():
+        if n >= 2:
+            return name
+    return None
+
+
+def is_weapon_shop(room: str) -> bool:
+    low = room.lower()
+    return "weapon" in low or "nathaniel" in low
+
+
+def is_armour_shop(room: str) -> bool:
+    low = room.lower()
+    return "armour" in low or "armor" in low or "betram" in low or "bertram" in low
+
+
+def is_general_store(room: str) -> bool:
+    low = room.lower()
+    return "general store" in low or "general" in low
+
+
+def is_spell_shop(room: str) -> bool:
+    """Newhaven Spell Shop / Dathalar, north of Narrow Path."""
+    low = room.lower()
+    return "spell" in low or "dathalar" in low
+
 
 SHOP_WORDS = (
     "shop",
@@ -471,14 +582,13 @@ def attack_name(name: str) -> str:
 def attack_line(name: str = "") -> str:
     """Wire form for a visible swing.
 
-    `a carrion beast` is speech. `attack` leaves `tack` on the line.
-    `at acid slime` eats `at` into the name → spoken `a id slime`.
-    `k` is kill — same swing, no collision with `acid`.
+    1.11p live: `attack filthbug` engages. `k kobold thief` is spoken.
+    `a carrion beast` is speech. `at acid slime` can become spoken `a id slime`.
     """
     aim = attack_name(name) if name else ""
     if not aim:
-        return "k"
-    return f"k {aim}"
+        return "attack"
+    return f"attack {aim}"
 
 
 def has_toon(name: str, extra: set[str] | None = None) -> bool:
@@ -561,12 +671,41 @@ def step_toward_store(room: str, exits: list[str] | None = None) -> str | None:
         step = "s"
     elif "village entrance" in low:
         step = "w"
-    elif "weapon" in low:
+    elif "weapon" in low or "nathaniel" in low:
         step = "s"
-    elif "armour" in low or "armor" in low:
+    elif "armour" in low or "armor" in low or "betram" in low or "bertram" in low:
         step = "n"
     elif "spell" in low:
         step = "s"
+    else:
+        step = None
+    return _open_step(step, exits)
+
+
+def step_toward_spell_shop(room: str, exits: list[str] | None = None) -> str | None:
+    """One step toward Newhaven Spell Shop (north of Narrow Path)."""
+    low = room.lower()
+    step: str | None
+    if is_spell_shop(low):
+        step = None
+    elif any(word in low for word in ARENA_WORDS):
+        step = "u"
+    elif "healer" in low:
+        step = "e"
+    elif "guild" in low:
+        step = "s"
+    elif "armour" in low or "armor" in low or "betram" in low or "bertram" in low:
+        step = "n"
+    elif "weapon" in low or "nathaniel" in low:
+        step = "s"
+    elif "general" in low:
+        step = "n"
+    elif "village entrance" in low:
+        step = "w"
+    elif "narrow path" in low:
+        step = "n"
+    elif "narrow road" in low:
+        step = "e"
     else:
         step = None
     return _open_step(step, exits)
@@ -587,9 +726,9 @@ def step_toward_guild(room: str, exits: list[str] | None = None) -> str | None:
         step = "u"
     elif "healer" in low:
         step = "e"
-    elif "armour" in low or "armor" in low:
+    elif "armour" in low or "armor" in low or "betram" in low or "bertram" in low:
         step = "n"
-    elif "weapon" in low:
+    elif "weapon" in low or "nathaniel" in low:
         step = "s"
     elif "general" in low:
         step = "n"
@@ -616,9 +755,9 @@ def step_toward_arena(room: str, exits: list[str]) -> str | None:
         step = "e"
     elif "guild" in low:
         step = "s"
-    elif "armour" in low or "armor" in low:
+    elif "armour" in low or "armor" in low or "betram" in low or "bertram" in low:
         step = "n"
-    elif "weapon" in low:
+    elif "weapon" in low or "nathaniel" in low:
         step = "s"
     elif "general" in low:
         step = "n"

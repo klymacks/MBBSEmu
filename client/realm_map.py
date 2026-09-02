@@ -24,7 +24,9 @@ NEWHAVEN = {
         "w": "Newhaven, Narrow Path",
     },
     "Newhaven, Weapon Shop": {"s": "Newhaven, Village Entrance"},
+    "Newhaven, Nathaniel": {"s": "Newhaven, Village Entrance"},
     "Newhaven, Armour Shop": {"n": "Newhaven, Village Entrance"},
+    "Newhaven, Betram": {"n": "Newhaven, Village Entrance"},
     "Newhaven, Narrow Path": {
         "n": "Newhaven, Spell Shop",
         "s": "Newhaven, General Store",

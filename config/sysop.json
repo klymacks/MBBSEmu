@@ -1,10 +1,13 @@
 {
   "username": "sysop",
   "password": "sysop",
-  "given": "Matt",
+  "given": "Klymacks",
   "party_leader": "Matt",
-  "class": "paladin",
-  "spells": ["minor healing", "harm", "bless"],
+  "auto_join": true,
+  "rank": "back",
+  "class": "ninja",
+  "ambush": "stand",
+  "spells": [],
   "auto_login": true,
   "auto_play": true,
   "pvp": false

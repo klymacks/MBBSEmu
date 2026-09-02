@@ -3,13 +3,21 @@ from __future__ import annotations
 from .parse import events_from_payload, harvest_screen, parse_events, parse_line
 from .paths import (
     attack_name,
+    extra_starter,
+    inventory_extras,
+    inventory_names,
+    inventory_worn,
     is_player,
+    is_general_store,
+    is_spell_shop,
+    is_weapon_shop,
     leave_dead_end,
     lop_in,
     players_in,
     is_trainer,
     step_toward_arena,
     step_toward_guild,
+    step_toward_spell_shop,
     step_toward_store,
 )
 from .state import WorldState
@@ -189,6 +197,9 @@ def test_combat_and_shop() -> None:
     assert parse_line("Closed door north") is None
     assert parse_line("The door is closed!")["kind"] == "cannot"
     assert parse_line("Your club hits, but glances off its armour!")["kind"] == "combat"
+    assert parse_line("You are typing too quickly - command ignored")["kind"] == "flood"
+    assert parse_line("Why don't you slow down for a few seconds?")["kind"] == "flood"
+    assert parse_line("You'll have to be more specific.")["kind"] == "shop_vague"
     assert parse_line("The following items are for sale:")["kind"] == "shop"
     assert parse_line("You just bought a club for nothing.")["kind"] == "bought"
     assert parse_line("Newhaven, Armour Shop")["kind"] == "room"
@@ -255,6 +266,10 @@ def test_combat_and_shop() -> None:
     assert parse_line("You do not have enough mana!")["kind"] == "cast_fail"
     asked = parse_line("Matt has invited you to follow Matt.")
     assert asked and asked["kind"] == "invited" and asked["name"] == "Matt"
+    him = parse_line("Matt has invited you to follow him.")
+    assert him and him["kind"] == "invited" and him["name"] == "Matt"
+    entered = parse_line("Matt just entered the Realm.")
+    assert entered and entered["kind"] == "arrive" and entered["name"] == "Matt"
     walked = parse_line("Klymacks just arrived from the north.")
     assert walked and walked["kind"] == "arrive" and walked["name"] == "Klymacks"
     below = parse_line("Klymacks just arrived from below.")
@@ -264,8 +279,19 @@ def test_combat_and_shop() -> None:
     left = parse_line("Klymacks just left to the south.")
     assert left and left["kind"] == "leave" and left["name"] == "Klymacks"
     assert parse_line("A filthbug walks into the room from the north.")["kind"] == "arrive"
+    blob = (
+        b"Exp: 818 Level: 1 Exp needed for next level: 1482 (2300) [35%]\r\n"
+        b"Matt has invited you to follow him.\r\n"
+        b"[HP=22]:\r\n"
+    )
+    kinds = [ev["kind"] for ev in events_from_payload(blob)]
+    assert "invited" in kinds
+    assert next(ev["name"] for ev in events_from_payload(blob) if ev["kind"] == "invited") == "Matt"
     tagged = parse_line("You are now following Matt")
     assert tagged and tagged["kind"] == "following" and tagged["name"] == "Matt"
+    still = parse_line("You are following Matt.")
+    assert still and still["kind"] == "following" and still["name"] == "Matt"
+    assert parse_line("You are no longer following Matt.")["kind"] == "left"
     they = parse_line("Klymacks started to follow you.")
     assert they and they["kind"] == "followed" and they["name"] == "Klymacks"
     offered = parse_line("You have invited Klymacks to follow you.")
@@ -505,6 +531,8 @@ def test_combat_and_shop() -> None:
     assert spoken and spoken["kind"] == "said" and spoken.get("aimed") == "carrion beast"
     at_said = parse_line('You say "at giant rat"')
     assert at_said and at_said.get("aimed") == "giant rat"
+    k_said = parse_line('You say "k kobold thief"')
+    assert k_said and k_said["kind"] == "said" and k_said.get("aimed") == "kobold thief"
     ask = parse_line('Klymacks says "heal"')
     assert ask and ask["kind"] == "heal_ask" and str(ask.get("name")) == "Klymacks"
     comma = parse_line('Klymacks says, "heal"')
@@ -757,6 +785,167 @@ def test_inventory_geared() -> None:
     s = WorldState()
     s.apply(ev)
     assert s.geared
+    assert ev.get("items")
+    assert extra_starter(list(ev["items"])) == "club"  # type: ignore[arg-type]
+    assert ev.get("extras") == ["club"]
+    assert extra_starter(s.inventory, s.extras) == "club"
+
+
+def test_inventory_wrapped_padded_set() -> None:
+    text = (
+        "You are carrying padded vest (Torso), padded helm (Head), padded pants (Legs),\n"
+        "padded boots (Feet), padded gloves (Hands), padded vest, padded helm, padded\n"
+        "pants, padded boots, padded gloves\n"
+        "You have no keys.\n"
+        "Wealth: 0 copper farthings\n"
+        "Encumbrance: 800/1920 - Medium [41%]\n"
+    )
+    evs = [e for e in parse_events(text) if e.get("kind") == "inventory"]
+    assert len(evs) == 1
+    items = list(evs[0]["items"])  # type: ignore[arg-type]
+    extras = list(evs[0]["extras"])  # type: ignore[arg-type]
+    worn = list(evs[0]["worn"])  # type: ignore[arg-type]
+    assert extras == [
+        "padded vest",
+        "padded helm",
+        "padded pants",
+        "padded boots",
+        "padded gloves",
+    ]
+    assert worn == [
+        "padded vest",
+        "padded helm",
+        "padded pants",
+        "padded boots",
+        "padded gloves",
+    ]
+    assert extra_starter(items, extras) == "padded vest"
+    s = WorldState()
+    s.apply(evs[0])
+    assert s.extras == extras
+    assert "padded gloves" in s.worn
+    raw = " ".join(
+        [
+            "You are carrying padded vest (Torso), padded helm (Head), padded pants (Legs),",
+            "padded boots (Feet), padded gloves (Hands), padded vest, padded helm, padded",
+            "pants, padded boots, padded gloves",
+        ]
+    )
+    assert inventory_extras(raw) == extras
+    assert inventory_worn(raw) == worn
+
+    tr = Transcript()
+    first = tr.feed(
+        b"You are carrying padded vest (Torso), padded helm (Head), padded pants (Legs),\n"
+        b"padded boots (Feet), padded gloves (Hands), padded vest, padded helm, padded\n"
+    )
+    assert first == []
+    rest = tr.feed(b"pants, padded boots, padded gloves\nYou have no keys.\n")
+    joined = [line for line in rest if line.lower().startswith("you are carrying")]
+    assert joined
+    assert "padded pants" in joined[0]
+    assert extra_starter(inventory_names(joined[0]), inventory_extras(joined[0])) == "padded vest"
+    seen: set[str] = set()
+    harvested = [
+        e
+        for e in harvest_screen(text, seen)
+        if e.get("kind") == "inventory"
+    ]
+    assert harvested
+    assert list(harvested[-1]["extras"]) == extras
+
+
+def test_inventory_stacked_extras() -> None:
+    text = (
+        "You are carrying padded vest (Torso), padded helm (Head), padded pants (Legs),\n"
+        "padded boots (Feet), padded gloves (Hands), 3 padded helm, 4 padded pants, 4\n"
+        "padded boots, 4 padded gloves\n"
+        "You have no keys.\n"
+        "Wealth: 0 copper farthings\n"
+        "Encumbrance: 1000/1920 - Medium [52%]\n"
+    )
+    evs = [e for e in parse_events(text) if e.get("kind") == "inventory"]
+    assert len(evs) == 1
+    extras = list(evs[0]["extras"])  # type: ignore[arg-type]
+    worn = list(evs[0]["worn"])  # type: ignore[arg-type]
+    assert extras.count("padded helm") == 3
+    assert extras.count("padded pants") == 4
+    assert extras.count("padded boots") == 4
+    assert extras.count("padded gloves") == 4
+    assert "padded vest" not in extras
+    assert worn == [
+        "padded vest",
+        "padded helm",
+        "padded pants",
+        "padded boots",
+        "padded gloves",
+    ]
+    s = WorldState()
+    s.apply(evs[0])
+    assert extra_starter(s.inventory, s.extras, worn=s.worn) == "padded helm"
+
+
+def test_already_worn_gloves() -> None:
+    ev = parse_line("You sold padded vest for 0 copper farthings.")
+    assert ev is not None
+    assert ev.get("kind") == "sold"
+    assert ev.get("item") == "padded vest"
+    ev = parse_line("You do not have padded gloves left unequipped.")
+    assert ev and ev["kind"] == "already_worn"
+    assert ev.get("item") == "padded gloves"
+    s = WorldState()
+    s.apply(ev)
+    assert s.already_worn == "padded gloves"
+    assert "padded gloves" in s.worn
+
+
+def test_nathaniel_steps_south() -> None:
+    assert is_weapon_shop("Nathaniel")
+    assert step_toward_arena("Nathaniel", ["s"]) == "s"
+    assert step_toward_arena("Nathaniel", ["s"]) != "n"
+    assert step_toward_arena("Newhaven, Village Entrance", ["s"]) is None
+
+
+def test_general_store_is_torch_shop() -> None:
+    assert is_general_store("Newhaven, General Store")
+    assert step_toward_store("Newhaven, Village Entrance") == "w"
+    assert step_toward_store("Newhaven, Narrow Path") == "s"
+    assert step_toward_store("Newhaven, General Store") is None
+
+
+def test_spell_shop_steps() -> None:
+    assert is_spell_shop("Newhaven, Spell Shop")
+    assert is_spell_shop("Dathalar")
+    assert not is_spell_shop("Newhaven, General Store")
+    assert step_toward_spell_shop("Newhaven, Village Entrance") == "w"
+    assert step_toward_spell_shop("Newhaven, Narrow Path") == "n"
+    assert step_toward_spell_shop("Newhaven, Narrow Road") == "e"
+    assert step_toward_spell_shop("Newhaven, General Store") == "n"
+    assert step_toward_spell_shop("Newhaven, Spell Shop") is None
+    assert step_toward_spell_shop("Newhaven, Arena", ["u"]) == "u"
+
+
+def test_learn_scroll_lines() -> None:
+    assert parse_line("You memorize the spell.")["kind"] == "learned"
+    assert parse_line("You have learned a new spell!")["kind"] == "learned"
+    already = parse_line("You already know that spell.")
+    assert already["kind"] == "learned"
+    assert already.get("already")
+    assert parse_line("You are not high enough level to learn that spell.")[
+        "kind"
+    ] == "spell_skip"
+    assert parse_line("You cannot learn that spell.")["kind"] == "spell_skip"
+    low = parse_line("You are not high enough level to cast that spell.")
+    assert low["kind"] == "cast_fail" and low.get("reason") == "level"
+    yet = parse_line("You cannot cast that spell yet.")
+    assert yet["kind"] == "cast_fail" and yet.get("reason") == "level"
+    fail = parse_line("Your bless fails!")
+    assert fail["kind"] == "cast_fail" and fail.get("reason") == "level"
+    s = WorldState()
+    s.apply({"kind": "learned"})
+    assert s.learned
+    s.apply({"kind": "spell_skip"})
+    assert s.spell_skip
 
 
 if __name__ == "__main__":
@@ -770,4 +959,11 @@ if __name__ == "__main__":
     test_train_and_level_forget_maxes()
     test_bless_lucky_and_wear_off()
     test_inventory_geared()
+    test_inventory_wrapped_padded_set()
+    test_inventory_stacked_extras()
+    test_already_worn_gloves()
+    test_nathaniel_steps_south()
+    test_general_store_is_torch_shop()
+    test_spell_shop_steps()
+    test_learn_scroll_lines()
     print("ok")
