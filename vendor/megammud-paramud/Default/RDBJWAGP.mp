@@ -1,0 +1,9 @@
+[][Winterhawk]
+[RDBJ:Baenglen:Road to Baenglen, Junction-14 5829]
+[WAGP:Baenglen:Withered Farm, Wagon Path-14 5836]
+26A00051:11000015:5:-1:0:::
+26A00051:0000:E
+2CD00050:0000:E
+2CD00050:0000:E
+2CD00041:0000:N
+11000005:0000:N

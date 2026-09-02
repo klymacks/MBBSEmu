@@ -1,0 +1,21 @@
+ok	stage	demo — play. codes stay blocked until you write data/finns-stage	/home/klymacks/Code/Repo/Projects/majormud/data/finns-stage
+ok	MajorMUD DLL	present	/home/klymacks/Code/Repo/Projects/majormud/modules/WCCMMUD/WCCMMUD.DLL
+ok	MajorMUD MDF	present	/home/klymacks/Code/Repo/Projects/majormud/modules/WCCMMUD/WCCMMUD.MDF
+ok	MajorMUD MSG	present	/home/klymacks/Code/Repo/Projects/majormud/modules/WCCMMUD/WCCMMUD.MSG
+ok	MajorMUD MSG.original (DEMO restore)	present	/home/klymacks/Code/Repo/Projects/majormud/modules/WCCMMUD/WCCMMUD.MSG.original
+ok	Plus DLL	present	/home/klymacks/Code/Repo/Projects/majormud/modules/WCCMMUD/WCCMMPLS.DLL
+ok	Plus MDF	present	/home/klymacks/Code/Repo/Projects/majormud/modules/WCCMMUD/WCCMMPLS.MDF
+ok	Plus MSG	present	/home/klymacks/Code/Repo/Projects/majormud/modules/WCCMMUD/WCCMMPLS.MSG
+ok	appsettings	present	/home/klymacks/Code/Repo/Projects/majormud/config/appsettings.json
+ok	modules.json	present	/home/klymacks/Code/Repo/Projects/majormud/data/modules.json
+ok	WCCMMUD.MSG ACTIVATE	DEMO	/home/klymacks/Code/Repo/Projects/majormud/modules/WCCMMUD/WCCMMUD.MSG
+ok	MSG.original ACTIVATE	DEMO restore point	/home/klymacks/Code/Repo/Projects/majormud/modules/WCCMMUD/WCCMMUD.MSG.original
+ok	WCCMMPLS.MSG ACTIVATE	DEMO	/home/klymacks/Code/Repo/Projects/majormud/modules/WCCMMUD/WCCMMPLS.MSG
+ok	WCCADDON.SYS	no file (correct until stage addons)	/home/klymacks/Code/Repo/Projects/majormud/modules/WCCMMUD/WCCADDON.SYS
+ok	GSBL.BTURNO	84732615	/home/klymacks/Code/Repo/Projects/majormud/config/appsettings.json
+ok	modules.json Identifier	WCCMMUD	/home/klymacks/Code/Repo/Projects/majormud/data/modules.json
+ok	WCCRECOV.FLG	absent (clean shutdown)	/home/klymacks/Code/Repo/Projects/majormud/modules/WCCMMUD/WCCRECOV.FLG
+ok	BBSUSR.DB vs Accounts	2 users: MATT, SYSOP	/home/klymacks/Code/Repo/Projects/majormud/data/BBSUSR.DB
+ok	character	sysop/Klymacks, matt/Matt	/home/klymacks/Code/Repo/Projects/majormud/modules/WCCMMUD/WCCUSERS.db
+ok	clean DEMO boots	3 clean DEMO boot(s) recorded	/home/klymacks/Code/Repo/Projects/majormud/data/boot-history.jsonl
+ok	last boot	256 users, DEMO	/home/klymacks/Code/Repo/Projects/majormud/data/last-boot.json

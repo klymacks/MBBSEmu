@@ -1,0 +1,11 @@
+[][Winterhawk]
+[SLAW:Slums:Abandoned Warehouse, Entrance]
+[SLMW:Slums:Western Door]
+2F200059:76B00095:7:-1:0:::
+2F200059:0000:s
+C2E00052:0000:w
+A0700050:0000:w
+4C200011:0000:n
+A0700005:0000:n
+A0700005:0000:n
+A0700005:0000:n

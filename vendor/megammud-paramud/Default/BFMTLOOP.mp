@@ -1,0 +1,13 @@
+[Blackwood Forest Mountain Trail Loop-17 855][Wintterhawk]
+[BFMT:Blackwood Forest:Blackwood Forest, Mountain Trail-17 855]
+83200001:83200001:10:-1:0:::
+83200001:0000:go path
+57200004:0000:s
+57205001:0000:se
+57200404:0000:nw
+57205001:0000:sw
+57204100:0000:sw
+57201100:0000:ne
+57204100:0000:ne
+57205001:0000:n
+57200004:0000:go path

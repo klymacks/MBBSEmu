@@ -1,0 +1,14 @@
+[][Winterhawk]
+[NPPV:Negative Power Plane:Negative Power Plane Vortex-8 978]
+[MBNP:Misty Valley:Misty Bog NPP Portal-1 2682]
+DD055500:04A00010:10:-1:0:::
+DD055500:0000:u
+DCF55500:0000:se
+DCF01400:0000:se
+DCF55500:0000:se
+DCF01400:0000:se
+DCF55500:0000:se
+DCF01400:0000:se
+DCF55500:0000:se
+DCF01400:0000:se
+DCF55500:0000:@party go portal

@@ -1,0 +1,10 @@
+[][Winterhawk]
+[SLSD:Slums:Strange Mansion, Den]
+[SSME:Slums:Strange Mansion, Entrance]
+89D00080:88900049:6:-1:0:::
+89D00080:0000:W
+F9600024:0000:S
+F9600005:0000:S
+F9600005:0000:S
+1CB00011:0000:E
+F9600045:0000:S

@@ -1,0 +1,14 @@
+[][Winterhawk]
+[OMJ2:Old Mines:Old Mine Tunnel, Junction (Golems 3)]
+[OMGU:Old Mines:Old Mine Tunnel, Hole Up (Golems 2)]
+90201140:4C410004:10:-1:0:::
+90201140:0000:w
+4C410010:0000:u
+9F040040:0000:w
+4C410010:0000:u
+9F040040:0000:w
+CFB00050:0000:w
+4C410010:0000:u
+9F040040:0000:w
+CFB00410:0000:nw
+CFB01041:0000:n

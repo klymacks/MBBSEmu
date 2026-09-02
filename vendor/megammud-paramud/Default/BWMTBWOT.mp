@@ -1,0 +1,11 @@
+[][Winterhawk]
+[BWMT:Tagesh Highlands:Bristlewood Forest, Marked Tree-14 3364]
+[BWOT:Tagesh Highlands:Bristlewood Forest, Old Trail-14 3410]
+22700105:B2401041:7:-1:0:::
+22700105:0000:N
+B2400005:0000:N
+B2400404:0000:NW
+B2401001:0000:N
+B2400005:0000:N
+B2400404:0000:NW
+B2401400:0000:NW

@@ -1,0 +1,9 @@
+[][Winterhawk]
+[TTSF:Shad-Thieves Town:Sheila's Fine Furs-5 531]
+[TTSC:Shadowmere:The Silver Cocoon-5 532]
+C7B00004:9DD00004:5:-1:0:::
+C7B00004:0000:S
+E5300051:0000:E
+E5300050:0000:E
+E5300050:0000:E
+E5300051:0000:N

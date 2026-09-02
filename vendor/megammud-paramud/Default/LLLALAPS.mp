@@ -1,0 +1,15 @@
+[][Winterhawk]
+[LLLA:Lorthan Lowlands:Lady Astor-14 9999]
+[LAPS:Lorthan Lowlands:Lady Astor's Private Study]
+36700010:3F600010:11:-1:0:heavy skeleton key::
+36700010:0000:E
+65900054:0000:S
+06B00045:0000:W
+55110010:0000:U
+6E140001:0000:N
+0F600005:0000:N
+0F600014:0000:E
+0F600058:0000:E
+0F600048:0000:S[use heavy skeleton key S]
+67C00006:0000:S
+67C00041:0000:W

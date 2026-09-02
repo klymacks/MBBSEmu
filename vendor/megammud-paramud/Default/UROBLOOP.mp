@@ -1,0 +1,9 @@
+[Oysters][Winterhawk]
+[UROB:Ocean:Underground River, Oyster Bed]
+37400140:37400140:6:-1:0:::
+37400140:0000:ne
+37404010:0000:e
+37401040:0000:se
+37400400:0000:nw
+37401040:0000:w
+37404010:0000:sw

@@ -1,0 +1,11 @@
+[][Winterhawk]
+[CKDC:Crimson Keep:Crimson Keep, Dungeon Cell]
+[CKIT:Crimson Keep:Crimson Keep, Inquisitor Thorand-13 2731]
+BE340080:96200065:7:-1:0:::
+BE340080:0000:W
+42200021:0000:N
+42200025:0000:N
+42200065:0000:W
+42210010:0000:U
+47B40050:0000:W
+47B0009A:0000:W

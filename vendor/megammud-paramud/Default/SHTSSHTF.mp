@@ -1,0 +1,10 @@
+[][Winterhawk]
+[SHTS:Shadowmere:Shadowmere Town Square-5 224]
+[SHTF:Shadowmere:Temple Foyer-5 287]
+08900055:DFF00050:6:-1:0:::
+08900055:0000:e
+DA500055:0000:e
+DE400050:0000:e
+39600054:0000:e
+39600050:0000:e
+F4800055:0000:e

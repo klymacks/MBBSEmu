@@ -1,0 +1,9 @@
+[Webbed Thicket West Loop 1-14 3220][Winterhawk]
+[WTW1:Bristlewood Forest:Webbed Thicket-14 3220]
+9EE05050:9EE05050:6:-1:0:::
+9EE05050:0000:w
+9EE04054:0000:sw
+9EE04155:0000:S
+9EE04555:0000:N
+9EE04155:0000:ne
+9EE04054:0000:e

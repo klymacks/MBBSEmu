@@ -1,0 +1,15 @@
+[][Winterhawk]
+[SDPY:Scorching Desert:Scorching Desert, Pyramid]
+[SDBB:Scorching Desert:Scorching Desert, Basalt Obelisk (2)]
+85500100:4AE05001:11:-1:0:::
+85500100:0000:ne
+4AE04100:0000:ne
+4AE04100:0000:ne
+4AE04100:0000:ne
+4AE04100:0000:ne
+4AE04100:0000:ne
+4AE04100:0000:ne
+4AE04100:0000:ne
+4AE04410:0000:e
+4AE00140:0000:ne
+4AE04100:0000:ne

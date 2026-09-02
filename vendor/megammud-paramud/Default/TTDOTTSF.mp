@@ -1,0 +1,9 @@
+[][Winterhawk]
+[TTDO:Shad-Thieves Town:Daymia's Oddities-5 249]
+[TTSF:Shad-Thieves Town:Sheila's Fine Furs-5 531]
+A1A00010:C7B00004:5:-1:0:::
+A1A00010:0000:E
+E5300045:0000:N
+E5300005:0000:N
+E5300014:0000:E
+E5300051:0000:N

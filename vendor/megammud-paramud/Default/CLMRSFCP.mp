@@ -1,0 +1,10 @@
+[][Winterhawk]
+[CLMR:Vale of Durand:Farnholme, The Marsh Road-14 8539]
+[SFCP:Vale of Durand:Smoldering Fields, Cart Path 14 8605]
+0C601140:DA700055:6:-1:0:::
+0C601140:0000:W
+0C600050:0000:W
+0C604010:0000:SW
+0C600140:0000:W
+0C600050:0000:W
+76400011:0000:N

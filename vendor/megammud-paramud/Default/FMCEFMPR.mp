@@ -1,0 +1,16 @@
+[][Winteerhawk]
+[FMCE:Shattered Expanse:Fractured Moor, Cliff Edge]
+[FMPR:Shattered Expanse:Fractured Moor, Precipice]
+7AB40400:83B00450:12:-1:0:::
+7AB40400:0000:nw
+84705100:0000:sw
+84700104:0000:s
+84700005:0000:s
+84700045:0000:s
+84700005:0000:s
+84704005:0000:s
+84700005:0000:s
+84701001:0000:se
+84701400:0000:se
+84700404:0000:s
+84701001:0000:se

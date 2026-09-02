@@ -1,0 +1,13 @@
+[][Winterhawk]
+[BFDE:Tagesh Highlands:Bristlewood Forest, Dead End-14 3456]
+[BFBD:Tagesh Highlands:The Bristledeep-14 3561]
+AAF00010:FCA01010:9:-1:0:::
+AAF00010:0000:n
+F0C00001:0000:n
+F0C00104:0000:ne
+F0C04100:0000:ne
+F0C04010:0000:e
+F0C01040:0000:se
+F0C00410:0000:e
+F0C00140:0000:ne
+BDD04000:0000:go hedge

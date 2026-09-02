@@ -1,0 +1,11 @@
+[][Winterhawk]
+[CFGI:Crimson Order:Grand Inquisitor Dulram-13 3968]
+[COST:Crimson Order:Crimson Order, Stairwell-13 3963]
+8D800004:00A10050:7:-1:0:::
+8D800004:0000:s
+A7000101:0000:ne
+A7004400:0000:nw
+A7005000:0000:sw
+A7000140:0000:w
+00A10050:0000:w
+66404450:0000:e

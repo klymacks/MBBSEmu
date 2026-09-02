@@ -985,7 +985,9 @@ _TITLE_NOISE = (
 
 
 def _looks_like_room_title(raw: str) -> bool:
-    if len(raw) > 60 or raw.endswith(":") or raw.endswith(".") or raw.endswith("]") or raw.endswith("!"):
+    if len(raw) > 80 or raw.endswith(":") or raw.endswith("]") or raw.endswith("!"):
+        return False
+    if raw.endswith(".") and not raw.endswith("St."):
         return False
     if raw.startswith("[") or raw.startswith("You ") or raw.startswith("A "):
         return False
@@ -1001,4 +1003,4 @@ def _looks_like_room_title(raw: str) -> bool:
     words = raw.split()
     if low.startswith("the ") and len(words) > 4:
         return False
-    return 1 <= len(words) <= 8 and raw[0].isupper()
+    return 1 <= len(words) <= 10 and raw[0].isupper()

@@ -1,0 +1,10 @@
+[][Winterhawk]
+[CICE:Terra Ista:Carved Ice Catacombs (east side)-13 8017]
+[CISR:Terra Ista:Carved Ice Shrine-13 8015]
+E0C04450:79D05555:6:-1:0:::
+E0C04450:0000:W
+E0C00050:0000:W
+E0C00055:0000:W
+E0C00055:0000:W
+E0C00055:0000:W
+E0C00050:0000:W

@@ -1,0 +1,9 @@
+[Webbed Thicket Center Loop-14 3188][Winterhawk]
+[WBTH:Bristlewood Forest:Webbed Thicket-14 3188]
+9EE00505:9EE00505:6:-1:0:::
+9EE00505:0000:n
+9EE00555:0000:nw
+9EE01555:0000:ne
+9EE05444:0000:se
+9EE04454:0000:sw
+9EE00555:0000:s

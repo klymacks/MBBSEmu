@@ -1,0 +1,10 @@
+[][Winterhawk]
+[TFPG:Terra Fuego:Pirate Galleon]
+[PGSB:Terra Fuego:Pirate Galleon, Ship Bow]
+85E10055:7BD00010:6:-1:0:::
+85E10055:0000:s
+85E00055:0000:w
+85E00055:0000:w
+85E00051:0000:w
+85E00411:0000:nw
+85E01150:0000:w

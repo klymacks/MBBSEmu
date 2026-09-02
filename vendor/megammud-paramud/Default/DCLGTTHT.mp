@@ -1,0 +1,10 @@
+[][Winterhawk]
+[DCLG:Shad-Darkened Cavern:Darkened Cavern, Ledge-5 3580]
+[TTHT:Shad-Thieves Town:Temple, Hidden Tunnel]
+86010001:33E00010:6:-1:0:::
+86010001:0000:U
+33E40400:0000:NW
+33E01400:0000:NW
+33E05001:0000:N
+33E00404:0000:NW
+33E01040:0000:W

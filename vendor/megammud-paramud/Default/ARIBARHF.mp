@@ -1,0 +1,10 @@
+[][Winterhawk]
+[ARIB:Arlysia:Island of Bones]
+[ARHF:Arlysia:Island of Bones, Hideous Face-17 1753]
+B8600005:B8600015:6:-1:0:::
+B8600005:0000:n
+B8600104:0000:ne
+B8604010:0000:e
+B8600050:0000:e
+B8600044:0000:s
+B8600005:0000:s

@@ -1,0 +1,9 @@
+[][]
+[FRT1:Black Fort:Black Fortress-7 1182]
+[FBIS:Black Fort:Dark Bishop-7 1227]
+A4F00055:9F700100:4:-1:0:::
+A4F00055:0000:e
+A4F00140:0000:ne
+A4F06900:0000:se
+67E04800:0000:sw
+

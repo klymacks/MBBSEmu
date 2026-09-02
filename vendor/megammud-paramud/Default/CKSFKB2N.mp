@@ -1,0 +1,12 @@
+[][Winterhawk]
+[CKSF:Crimson Keep:Crimson Keep, Second Floor-13 4066]
+[KB2N:Crimson Keep:Keep, 2nd Floor N Barracks-13 4098]
+5D700015:C3500058:8:-1:0:::
+5D700015:0000:e
+96200055:0000:e
+96200055:0000:e
+96200055:0000:e
+96200065:0000:e
+47B00090:0000:e
+47B0005A:0000:n
+C3500058:0000:pro

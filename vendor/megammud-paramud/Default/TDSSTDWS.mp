@@ -1,0 +1,10 @@
+[][Winterhawk]
+[TDSS:Scorching Desert:Temple Depths, South-12 2509]
+[TDWS:Scorching Desert:Temple Depths, West-12 2490]
+33F00504:33F00045:6:-1:0:::
+33F00504:0000:NW
+33F01400:0000:NW
+33F01001:0000:N
+33F00005:0000:N
+33F00504:0000:NW
+33F01001:0000:N

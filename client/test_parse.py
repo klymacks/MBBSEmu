@@ -8,16 +8,22 @@ from .paths import (
     inventory_names,
     inventory_worn,
     is_player,
+    is_dangerous,
     is_general_store,
     is_spell_shop,
     is_weapon_shop,
     leave_dead_end,
+    leave_spell_shop,
     lop_in,
     occupants_in,
     players_in,
     is_trainer,
+    in_silvermere,
+    in_temple,
+    step_out_temple,
     step_toward_arena,
     step_toward_guild,
+    step_toward_newhaven,
     step_toward_spell_shop,
     step_toward_store,
 )
@@ -471,6 +477,8 @@ def test_combat_and_shop() -> None:
     assert ready.exp_label() == "TRAIN 100%"
     assert is_trainer("Newhaven, Guild")
     assert not is_trainer("Newhaven, Narrow Road")
+    assert not is_trainer("Guild Street")
+    assert is_trainer("Paladin Training Room")
     wound = WorldState()
     wound.apply({"kind": "prompt", "hp": 28, "max_hp": None})
     wound.apply({"kind": "prompt", "hp": 17, "max_hp": None})
@@ -938,6 +946,50 @@ def test_spell_shop_steps() -> None:
     assert step_toward_spell_shop("Newhaven, Arena", ["u"]) == "u"
 
 
+def test_silvermere_nav() -> None:
+    assert in_silvermere("Town Square")
+    assert in_silvermere("Docks")
+    assert in_silvermere("Pier")
+    assert in_silvermere("Intersection of Guild St. & River St.")
+    assert not in_silvermere("Newhaven, Docks")
+    assert not is_dangerous("Arena Entrance")
+    assert is_dangerous("Sewer Tunnel, Junction (below TS)")
+    assert is_dangerous("Newhaven, Arena")
+    assert is_spell_shop("Temple Spell Store")
+    assert is_weapon_shop("Helfgrim's Blades")
+    assert is_general_store("General Store")
+    assert step_toward_arena("Town Square", ["n", "s", "e", "w"]) == "go manhole"
+    assert step_toward_arena("Guild Street, Southern End", ["n", "s"]) == "s"
+    assert step_toward_arena("Sewer Tunnel, Junction (below TS)", ["u"]) is None
+    assert step_toward_spell_shop("Town Square", ["n", "s", "e", "w"]) == "w"
+    assert leave_spell_shop("Temple Spell Store", ["n"]) == "n"
+    assert step_toward_newhaven("Pier", ["s"]) == "borrow skiff"
+    assert step_toward_newhaven("Docks", ["n", "s", "e"]) == "n"
+    assert step_toward_newhaven("Intersection of Guild St. & River St.", ["s", "e", "w"]) == "w"
+
+
+def test_temple_walks_east_not_down() -> None:
+    halls = ["n", "s", "e", "w"]
+    assert in_temple("Temple Hall")
+    assert in_temple("Priestly Training Room")
+    assert in_temple("Halls of the Dead")
+    assert not in_temple("Temple Street")
+    assert in_silvermere("Temple Street")
+    assert step_out_temple("Temple Hall", halls) == "e"
+    assert step_toward_arena("Temple Hall", halls) == "e"
+    assert step_toward_arena("Priestly Training Room", ["n"]) == "n"
+    assert step_toward_arena("Clerical Training Room", ["s"]) == "s"
+    assert step_toward_arena("Temple Chapel", ["e", "n", "s"]) == "e"
+    assert step_toward_arena("Temple Healer", ["s", "d"]) == "s"
+    assert step_toward_arena("Marble Passage", ["u", "d"]) == "u"
+    assert step_toward_spell_shop("Temple Hall", halls) == "e"
+    assert step_toward_spell_shop(
+        "Temple Hall", halls, via="w", prev="Temple Street"
+    ) == "s"
+    assert step_toward_spell_shop("Temple Street", ["e", "w"]) == "w"
+    assert step_toward_spell_shop("Priestly Training Room", ["n"]) == "n"
+
+
 def test_learn_scroll_lines() -> None:
     assert parse_line("You memorize the spell.")["kind"] == "learned"
     assert parse_line("You have learned a new spell!")["kind"] == "learned"
@@ -978,5 +1030,7 @@ if __name__ == "__main__":
     test_nathaniel_steps_south()
     test_general_store_is_torch_shop()
     test_spell_shop_steps()
+    test_silvermere_nav()
+    test_temple_walks_east_not_down()
     test_learn_scroll_lines()
     print("ok")

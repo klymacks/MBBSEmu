@@ -1,0 +1,16 @@
+[][Winterhawk]
+[GEMR:Blackwood Forest:Graveyard Entrance, Main Road]
+[GESG:Blackwood Forest:Graveyard Entrance, Southern Gate]
+7AE00050:D9900005:12:-1:0:::
+7AE00050:0000:w
+2B000055:0000:w
+2B000055:0000:w
+2B000054:0000:s
+2B000055:0000:s
+2B000055:0000:s
+2B000055:0000:s
+2B000055:0000:s
+2B000045:0000:s
+2B000041:0000:w
+2B000051:0000:w
+2B000055:0000:s

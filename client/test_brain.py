@@ -5654,6 +5654,94 @@ def test_map_pathfind_when_lost() -> None:
     assert "path:" in b.next_action
 
 
+def test_silvermere_square_drops_manhole() -> None:
+    b = Brain(allowed=True, klass="paladin")
+    b.gear_done = True
+    b.mode = "hunt"
+    b._in_camp = True
+    b._asked_health = True
+    state = WorldState()
+    state.in_realm = True
+    state.hp = 28
+    state.max_hp = 28
+    state.max_hp_known = True
+    state.prompt_seq = 410
+    state.room = "Town Square"
+    state.exits = ["n", "s", "e", "w"]
+    state.scanned = True
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["go manhole"]
+
+
+def test_silvermere_docks_walks_toward_square() -> None:
+    b = Brain(allowed=True, klass="paladin")
+    b.gear_done = True
+    b.mode = "hunt"
+    b._asked_health = True
+    state = WorldState()
+    state.in_realm = True
+    state.hp = 28
+    state.max_hp = 28
+    state.max_hp_known = True
+    state.prompt_seq = 411
+    state.room = "Docks"
+    state.exits = ["n", "s", "e", "w"]
+    state.scanned = True
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["s"]
+
+
+def test_temple_hall_hunts_east() -> None:
+    b = Brain(allowed=True, klass="paladin")
+    b.gear_done = True
+    b.mode = "hunt"
+    b._asked_health = True
+    state = WorldState()
+    state.in_realm = True
+    state.hp = 28
+    state.max_hp = 28
+    state.max_hp_known = True
+    state.prompt_seq = 412
+    state.room = "Temple Hall"
+    state.exits = ["n", "s", "e", "w"]
+    state.scanned = True
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["e"]
+    assert "d" not in sent
+    assert "w" not in sent
+
+
+def test_priest_trainer_leaves_north() -> None:
+    b = Brain(allowed=True, klass="paladin")
+    b.gear_done = True
+    b.mode = "hunt"
+    b._asked_health = True
+    b._in_camp = True
+    state = WorldState()
+    state.in_realm = True
+    state.hp = 28
+    state.max_hp = 28
+    state.max_hp_known = True
+    state.prompt_seq = 413
+    state.room = "Priestly Training Room"
+    state.exits = ["n"]
+    state.scanned = True
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["n"]
+
+
+def test_silvermere_pier_skiff_home() -> None:
+    assert Atlas().path("Pier", "Newhaven, Village Entrance") == [
+        "borrow skiff",
+        "n",
+        "nw",
+    ]
+
+
 def test_unknown_room_does_not_crash() -> None:
     b = Brain(allowed=True)
     b.gear_done = True
@@ -6377,6 +6465,11 @@ if __name__ == "__main__":
     test_ambush_key_aliases_stealth()
     test_paladin_never_sneaks()
     test_map_pathfind_when_lost()
+    test_silvermere_square_drops_manhole()
+    test_silvermere_docks_walks_toward_square()
+    test_temple_hall_hunts_east()
+    test_priest_trainer_leaves_north()
+    test_silvermere_pier_skiff_home()
     test_unknown_room_does_not_crash()
     test_following_skips_map_walk()
     test_ally_mortal_break_then_leave_drag()

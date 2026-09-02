@@ -1,0 +1,13 @@
+[][Winterhawk]
+[TSR1:Tagesh Highlands:Tagesh Highlands, Southern Road-14 3994]
+[GVWE:Tagesh Highlands:Ghille Village, West Entrance-14 2898]
+5FF40040:F1F00050:9:-1:0:::
+5FF40040:0000:d
+5FF10010:0000:e
+5FF00050:0000:e
+5FF00050:0000:e
+5FF00140:0000:ne
+5FF04100:0000:ne
+5A704100:0000:ne
+5FF04010:0000:e
+5FF00050:0000:e

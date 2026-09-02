@@ -1,0 +1,12 @@
+[][Winterhhawk]
+[TCSP:Scorching Desert:Crumbling Temple, Sphinx Statue]
+[CTSS:Scorching Desert:Crumbling Temple, South Stair]
+4B300004:41D10400:8:-1:0:::
+4B300004:0000:S
+4B300005:0000:S
+4B301501:0000:SE
+4B300410:0000:E
+4B300050:0000:E
+4B301040:0000:SE
+45100414:0000:S
+41D01001:0000:SE

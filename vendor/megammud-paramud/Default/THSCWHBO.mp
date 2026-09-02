@@ -1,0 +1,14 @@
+[][Winterhawk]
+[THSC:Tagesh Highlands:Southern Road, Crossroad-14 4023]
+[WHBO:Tagesh Highlands:Withered Hillside, Boulder-14 5387]
+5FF00055:16040400:10:-1:0:::
+5FF00055:0000:n
+B1200404:0000:nw
+B1201040:0000:w
+B1204010:0000:sw
+B1200500:0000:nw
+B1201040:0000:w
+B1200410:0000:nw
+B1201040:0000:w
+B1201040:0000:w
+05210010:0000:u

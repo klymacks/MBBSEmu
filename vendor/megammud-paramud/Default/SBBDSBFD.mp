@@ -1,0 +1,10 @@
+[][Winterhawk]
+[SBBD:Baenglen:Stone Barracks, Back Door-14 6229]
+[SBFD:Baenglen:Stone Barracks, Front Door-14  6217]
+04500094:E1300061:6:-1:0:::
+04500094:0000:e
+8CD00054:0000:e
+8CD00054:0000:e
+8CD00044:0000:s
+8CD00045:0000:s
+8CD00045:0000:s

@@ -1,0 +1,16 @@
+[][Winterhawk]
+[STHC:Swamp of Tharollok:Swamp of Tharollok, Hidden Copse-13 2995]
+[STPE:Swamp of Tharollok:Swamp of Tharollok, Path End-13 2933]
+D8D00005:D6C44000:12:-1:0:::
+D8D00005:0000:n
+2E705404:0000:nw
+57601410:0000:e
+57600140:0000:ne
+57605000:0000:se
+57600500:0000:ne
+57604010:0000:e
+57601040:0000:se
+57600410:0000:e
+57600050:0000:e
+57600140:0000:ne
+57604100:0000:ne

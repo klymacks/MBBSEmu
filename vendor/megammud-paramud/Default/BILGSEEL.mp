@@ -1,0 +1,13 @@
+[][Winterhawk]
+[BILG:Shattered Expanse:Broken Isle, Ledge]
+[SEEL:Shattered Expanse:Eldrezeth]
+A6201005:61300001:9:-1:0:::
+A6201005:0000:n
+86E00045:0000:n
+86E00005:0000:n
+86E00104:0000:ne
+86E04010:0000:e
+86E01041:0000:n
+86E00104:0000:ne
+86E04410:0000:e
+6D400044:0000:s

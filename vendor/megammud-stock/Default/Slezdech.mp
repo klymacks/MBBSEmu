@@ -1,0 +1,9 @@
+[][]
+[SLEZ:Dark-Elf City:Sleazy Shopkeeper-8 486]
+[DECH:Dark-Elf City:Dark-elff City (Hole up)-8 460]
+A1400020:3E710004:5:-1:0:::
+A1400020:0001:e
+86400085:0001:n
+78000055:0001:n
+5D900006:0001:n
+02D00009:0001:n

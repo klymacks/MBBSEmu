@@ -1,0 +1,12 @@
+[][Winterhawk]
+[NHVE:Newhaven:Newhaven, Village Entrance]
+[NEWH:Newhaven:Newhaven Town]
+2D601045:38B40051:8:-1:0:::
+2D601045:0000:n
+D9300004:0000:s
+2D601045:0000:s
+50800001:0000:n
+2D601045:0000:w
+42D00055:0000:n
+BC300004:0000:s
+42D00055:0000:w

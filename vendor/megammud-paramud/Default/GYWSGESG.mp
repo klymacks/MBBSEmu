@@ -1,0 +1,14 @@
+[][Winterhawk]
+[GYWS:Blackwood Forest:Graveyard, Warrior Statue]
+[GESG:Blackwood Forest:Graveyard Entrance, Southern Gate]
+2B000051:D9900005:10:-1:0:::
+2B000051:0000:w
+2B000055:0000:s
+2B000045:0000:s
+2B000045:0000:s
+2B000055:0000:s
+2B000055:0000:s
+2B000055:0000:s
+2B000055:0000:s
+2B000051:0000:e
+2B000055:0000:s

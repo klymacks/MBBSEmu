@@ -1,0 +1,11 @@
+[][Winterhawk]
+[MPNP:Barren Hills:Mountain Plateau, NPP Portal]
+[BHMP:Barren Hills:Mountain Plateau]
+B6700400:4F440001:7:-1:0:::
+B6700400:0000:nw
+4F401140:0000:w
+4F400050:0000:w
+4F404010:0000:sw
+4F400500:0000:nw
+4F401440:0000:w
+4F400015:0000:s

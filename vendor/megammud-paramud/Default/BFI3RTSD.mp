@@ -1,0 +1,17 @@
+[][Winterhawk]
+[BFI3:Blackwood Forest:Blackwood Forest Instant Regen 3]
+[RTSD:Blackwood Forest:Road to the Southern Dock]
+57200400:6DF04001:13:-1:0:::
+57200400:0000:nw
+57201140:0000:w
+57200450:0000:w
+57200411:0000:nw
+57201440:0000:w
+57200050:0000:w
+0AA00050:0000:w
+DE400050:0000:w
+DE404010:0000:sw
+DE400140:0000:w
+DE400010:0000:go path
+1FF00404:0000:nw
+1FF01500:0000:ne

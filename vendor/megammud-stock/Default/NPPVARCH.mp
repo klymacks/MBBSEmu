@@ -1,0 +1,15 @@
+[][Winterhawk]
+[NPPV:Negative Power Plane:Negative Power Plane Vortex-8 978]
+[ARCH:Dark-Elf City:Dark-elf Archmage-8 558]
+DD055500:7CF00002:11:-1:0:::
+DD055500:0000:se
+DCF01400:0000:se
+DCF55500:0000:sw
+DCF04100:0000:sw
+DCF55500:0000:sw
+DCF04100:0000:sw
+DCF55500:0000:sw
+DCF04100:0000:sw
+DCF55500:0000:sw
+DCF04100:0000:sw
+DCF55500:0000:@party go portal

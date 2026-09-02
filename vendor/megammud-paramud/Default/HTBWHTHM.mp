@@ -1,0 +1,9 @@
+[][Winterhawk]
+[HTBW:Ancient Fortress:Beautiful Woman (Lorzina) (TRAPS!)]
+3F200010:3F204025:6:-1:0:::
+3F200010:0200:e
+3F200440:0200:nw
+3F201400:0200:nw
+3F201004:0200:s
+3F200005:0200:s
+3F200005:0200:s

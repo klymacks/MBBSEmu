@@ -1,0 +1,19 @@
+[][]
+[LIBS:Arlysia:Library Steps]
+[ARMD:Arlysia:Rotting Beholder]
+3CD00006:26B00000:15:-1:0:jagged bone key:LSOHLIBS.mp:
+3CD00006:0000:n[use jagged bone key n]
+BEC00008:0040:e
+BEC00000:0040:s
+BEC00000:0040:w
+BEC00000:0000:d
+F2200002:0000:n
+4070AAA8:0000:n
+40700001:0000:n
+40700054:0000:e
+40700041:0000:n
+40700005:0000:n
+FFFFFFFF:0000:eq feathered mask
+FFFFFFFF:0000:use lantern
+FFFFFFFF:0000:eq anointed morningstar
+40700044:0009:sw

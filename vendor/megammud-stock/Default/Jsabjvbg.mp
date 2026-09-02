@@ -1,0 +1,11 @@
+[][Fizban the Fabulous]
+[JSAB:Ocean:Sandy Beach-16 2531]
+[JVBG:Jungle:Vine Bridge, Wooden Gateway-16 1201]
+7C110004:B0D00050:7:-1:0:::
+7C110004:0000:u
+DCA40040:0000:w
+DCA10010:0000:u
+DCA40540:0000:ne
+DCA14004:0000:u
+DCA40051:0000:e
+0D600050:0000:e

@@ -1,0 +1,10 @@
+[][Winterhawk]
+[TPJN:Tagesh Highlands:Tagesh Plateau, Junction-14 5653]
+[IFNP:Baenglen:Infested Fields, North Path-14 5922]
+10004140:61F00055:6:-1:0:::
+10004140:0000:SW
+1CE00104:0000:S
+1CE04001:0000:SW
+1CE00104:0000:S
+1CE01001:0000:SE
+1CE00404:0000:S

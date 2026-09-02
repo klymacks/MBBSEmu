@@ -1,0 +1,12 @@
+[][Winterhawk]
+[UGLK:Ocean:Underground Lake-16 190]
+[UROB:Ocean:Underground River, Oyster Bed]
+C1400004:37400140:8:-1:0:::
+C1400004:0000:s
+31F05051:0000:se
+31F05400:0000:se
+31F04400:0000:sw
+31F01500:0000:se
+31F01500:0000:se
+31F00404:0000:s
+31F00011:0000:e

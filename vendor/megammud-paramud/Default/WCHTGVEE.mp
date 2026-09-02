@@ -1,0 +1,10 @@
+[][Winterhawk]
+[WCHT:Tagesh Highlands:Woodcutter's Hut-14 2904]
+[GVEE:Tagesh Highlands:Ghille Village, East Entrance]
+24801100:DA500050:6:-1:0:::
+24801100:0000:NE
+7E604010:0000:E
+7E600168:0000:NE
+7E604081:0000:N
+7E600025:0000:N
+A5904055:0000:E

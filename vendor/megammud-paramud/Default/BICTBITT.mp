@@ -1,0 +1,14 @@
+[][Winterhawk]
+[BICT:Rocky Trail:Black Ice Cavern, Dragon Fork]
+[BITT:Rocky Trail:Black Ice Cavern, Twisting Tunnel]
+04100504:04100405:10:-1:0:::
+04100504:0000:s
+04100011:0000:e
+04101040:0000:se
+04101500:0000:ne
+04104001:0000:n
+04100104:0000:ne
+04104001:0000:n
+04100014:0000:e
+04100140:0000:ne
+04105000:0000:se

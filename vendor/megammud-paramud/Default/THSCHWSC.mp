@@ -1,0 +1,11 @@
+[][Winterhawk]
+[THSC:Tagesh Highlands:Southern Road, Crossroad-14 4023]
+[HWSC:Tagesh Highlands:Highland Wilds, Stone Circle-14 4171]
+5FF00055:18405151:7:-1:0:::
+5FF00055:0000:S
+7EA01001:0000:SE
+7EA00404:0000:S
+7EA01015:0000:SE
+7EA01400:0000:SE
+7EA01400:0000:SE
+7EA00404:0000:S

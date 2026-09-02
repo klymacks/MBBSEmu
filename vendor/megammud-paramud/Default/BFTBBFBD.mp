@@ -1,0 +1,11 @@
+[][Winterhawk]
+[BFTB:Tagesh Highlands:Bristledeep, Thorn-choked Brake]
+[BFBD:Tagesh Highlands:The Bristledeep-14 3561]
+43704145:FCA01010:7:-1:0:::
+43704145:0000:S
+43701001:0000:SE
+43700410:0000:E
+43704040:0000:SW
+43700110:0000:E
+43704040:0000:SW
+43700100:0000:go trees

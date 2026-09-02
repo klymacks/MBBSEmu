@@ -1,0 +1,8 @@
+[][]
+[HELF:Silvermere:Helfgrim's Blades-1 355]
+[STSQ:Silvermere:Town Square-1 224]
+7D200010:9D400055:4:-1:0:::
+7D200010:0000:e
+E7000055:0000:s
+E7000045:0000:s
+ECE00055:0000:s

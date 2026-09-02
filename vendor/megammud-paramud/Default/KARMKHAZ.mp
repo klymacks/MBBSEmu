@@ -1,0 +1,9 @@
+[][]
+[KARM:Khazarad:Martok's Battered Breastplate]
+[KHAZ:Khazarad:Khazarad Center]
+80C00011:19800051:5:-1:0:::
+80C00011:0000:n
+3B900055:0000:e
+3B900052:0000:e
+19800045:0000:n
+19800014:0000:e

@@ -1,0 +1,10 @@
+[][Winterhawk]
+[SHTS:Shadowmere:Shadowmere Town Square-5 224]
+[SHUT:Trainers:Shadowmere, Universal Trainer (76-85)]
+08900055:74400010:6:-1:0:::
+08900055:0000:N
+ECE00055:0000:N
+E7000015:0000:N
+E7000055:0000:W
+45800050:0000:W
+7A300055:0000:W

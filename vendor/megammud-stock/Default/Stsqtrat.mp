@@ -1,0 +1,10 @@
+[][]
+[STSQ:Silvermere:Town Square-1 224]
+[TRAT:Silvermere:Trina's Exotic Armours-1 2437]
+9D400055:7B100010:6:-1:0:::
+9D400055:0000:n
+ECE00055:0000:n
+E7000045:0000:n
+E7000055:0000:n
+E7000045:0000:n
+E7000055:0000:w

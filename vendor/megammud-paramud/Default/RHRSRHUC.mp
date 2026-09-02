@@ -1,0 +1,11 @@
+[][Winterhawk]
+[RHRS:Rhudaur:Rancid Sewer, Manhole Up]
+[RHUC:Rhudaur:Rhudaur Center]
+8AF10005:7AD00055:7:-1:0:::
+8AF10005:0000:u
+92D00001:0000:n
+4C900015:0000:n
+4C900005:0000:n
+4C900055:0000:e
+D8200015:0000:e
+C1E00051:0000:e

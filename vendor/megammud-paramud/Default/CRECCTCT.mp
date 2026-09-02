@@ -1,0 +1,11 @@
+[][Winterhawk]
+[CREC:Crownlands:Crownlands, Eastern Crossroads-14 1818]
+[CTCT:Crownlands:Captain Trendel-14 2814]
+4A405514:D6100040:7:-1:0:::
+4A405514:0000:sw
+87004140:0000:w
+D9500051:0000:w
+D9500055:0000:w
+D9500051:0000:w
+D9500055:0000:s
+D9500015:0000:e

@@ -1,0 +1,12 @@
+[][]
+[VXWN:Black Wastelands:Wastelands Vortex (Neg. Power Plane)]
+[OBBW:Black Wastelands:Wastelands Obelisk]
+ED100104:ED201001:8:-1:0:::
+ED100104:0000:s
+ED000005:0000:s
+ED000051:0000:w
+ED000050:0000:w
+ED000014:0000:s
+ED004001:0000:sw
+ED000144:0000:w
+ED004410:0000:nw

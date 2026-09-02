@@ -1,0 +1,10 @@
+[][Winterhawk]
+[KPCG:Kingsport:Kingsport, Castle Gates]
+[KPKA:Kingsport:King Andrus]
+4E305056:1DC00056:6:-1:0:::
+4E305056:0000:n
+EC80000A:0000:n
+6D000059:0000:n
+C5E00055:0000:n
+3FF00005:0000:n
+3FF00005:0000:n

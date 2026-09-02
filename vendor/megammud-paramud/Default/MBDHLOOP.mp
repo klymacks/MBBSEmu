@@ -1,0 +1,11 @@
+[Black Dragon Hatchlings (easy)-6 472][Winterhawk]
+[MBDH:Misty Valley:Misty Bog, Black Dragon Hatchlings-6 472]
+04A05001:04A05001:8:-1:0:::
+04A05001:0000:se
+04A01400:0000:se
+04A00404:0000:s
+04A04001:0000:sw
+04A04500:0000:nw
+04A01001:0000:n
+04A04404:0000:nw
+04A05100:0000:ne

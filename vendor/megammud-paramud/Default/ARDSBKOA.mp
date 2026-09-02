@@ -1,0 +1,9 @@
+[][Winterhawk]
+[ARDS:Arlysia:Dirt Street]
+[BKOA:Arlysia:Bank of Arlysia]
+A0500054:D4F00041:5:-1:0:::
+A0500054:0000:e
+98800045:0000:s
+98800005:0000:s
+98800005:0000:s
+9C000055:0000:s

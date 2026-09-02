@@ -1,0 +1,12 @@
+[][Winterhawk]
+[HTHM:Ancient Fortress:Hedge Maze]
+[AFJC:Ancient Fortress:Ancient Fortress, Jail Entrance]
+3F204025:48610002:8:-1:0:::
+3F204025:0000:e
+42C00085:0000:n
+42C00084:0000:w
+70200080:0000:w
+70200025:0000:s
+70200065:0000:w
+E8E0005A:0000:w
+E8E0001A:0000:s

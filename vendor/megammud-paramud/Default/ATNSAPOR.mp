@@ -1,0 +1,14 @@
+[][Winterhawk]
+[ATNS:Darkwood Forest:Ancient Darkwood Tree, Narrow Stair]
+[APOR:Darkwood Forest:Ancient Tree Portal]
+544400AA:DEB00010:10:-1:0:::
+544400AA:0000:d
+54450000:0000:d
+54450000:0000:d
+54450000:0000:d
+54450000:0000:d
+54450000:0000:d
+54450000:0000:d
+54450000:0000:d
+54450000:0000:d
+54450000:0000:d

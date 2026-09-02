@@ -1,0 +1,45 @@
+This is an MBBSEmu Module Crash Report. This report contains detailed information 
+to help the MBBSEmu team diagnose and debug the issue this module ran into while 
+running within the emulator. 
+
+You can submit this report to the MBBSEmu team by opening an issue on GitHub at:
+https://github.com/mbbsemu/MBBSEmu/issues
+
+Please include the following information (copy/paste):
+---------------------------------------------------------------
+
+MBBSEmu v010225-183 Module Crash Report
+Date: 8/30/2026
+Time: 9:10 PM
+Operating System: Ubuntu 24.04.4 LTS
+Processor: X64
+
+Module Identifier: WCCMMUD
+Module Path: /home/klymacks/Code/Repo/Projects/majormud/modules/WCCMMUD/
+DLL Name: WCCMMUD.DLL
+DLL Size: 927381
+DLL Hash: C220D2BF
+
+Exception: Specified argument was out of the range of valid values. (Parameter '55 value 255 is outside specified bounds')
+Stack Trace: 
+   at MBBSEmu.HostProcess.ExportedModules.Majorbbs.numopt()
+   at MBBSEmu.HostProcess.ExportedModules.Majorbbs.Invoke(UInt16 ordinal, Boolean offsetsOnly)
+   at MBBSEmu.HostProcess.ExecutionUnits.ExecutionUnit.ExternalFunctionDelegate(UInt16 ordinal, UInt16 functionOrdinal)
+   at MBBSEmu.CPU.CpuCore.Op_Call()
+   at MBBSEmu.CPU.CpuCore.Tick()
+   at MBBSEmu.HostProcess.ExecutionUnits.ExecutionUnit.Execute(FarPtr entryPoint, UInt16 channelNumber, Boolean simulateCallFar, Boolean bypassState, Queue`1 initialStackValues, UInt16 initialStackPointer)
+   at MBBSEmu.Module.MbbsModule.Execute(FarPtr entryPoint, UInt16 channelNumber, Boolean simulateCallFar, Boolean bypassSetState, Queue`1 initialStackValues, UInt16 initialStackPointer)
+
+CPU Instruction: 
+call far ptr 0FFFFh:01B9h
+
+CPU Registers:
+AX=004C  BX=AD14  CX=0047  DX=002B  CS=0003  DS=0024  ES=004C 
+SI=0000  DI=0000  SS=0000  IP=01AF  SP=FFC6  BP=FFC6 
+F=CzSo
+
+Module Memory Stack:
+-------------------------------------------------------------------------
+65536 bytes, 0xFFC6 -> 0xFFC6
+-------------------------------------------------------------------------
+No Data to Display

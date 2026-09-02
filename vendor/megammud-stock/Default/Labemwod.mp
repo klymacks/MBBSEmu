@@ -1,0 +1,9 @@
+[][]
+[LABE:Island:Labyrinth Entrance-1 1832]
+[MWOD:Island:Wooden Passages-1 1875]
+7D500054:82400094:5:-1:0:::
+7D500054:0001:e
+B4300050:0001:e
+B4300050:0001:e
+B4300045:0001:n
+B4300025:0001:e

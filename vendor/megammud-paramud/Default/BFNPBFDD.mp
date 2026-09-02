@@ -1,0 +1,11 @@
+[][Winterhawk]
+[BFNP:Blackwood Forest:Blackwood Forest NPP Portal]
+[BFDD:Blackwood Forest:Blackwood Forest, Dark Den]
+57200040:C7300410:7:-1:0:::
+57200040:0000:W
+57204410:0000:NW
+57201001:0000:N
+57200404:0000:NW
+29A05001:0000:SW
+57204100:0000:SW
+57201100:0000:go fissure

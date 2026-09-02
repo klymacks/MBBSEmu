@@ -1,0 +1,719 @@
+{
+  "rooms": {
+    "arena entrance": {
+      "title": "Arena Entrance",
+      "exits": [
+        "s"
+      ]
+    },
+    "clerical training room": {
+      "title": "Clerical Training Room",
+      "exits": [
+        "s"
+      ]
+    },
+    "council\"": {
+      "title": "Council\"",
+      "exits": [
+        "e",
+        "s",
+        "w"
+      ]
+    },
+    "docks": {
+      "title": "Docks",
+      "exits": [
+        "e",
+        "n",
+        "s",
+        "search down"
+      ]
+    },
+    "fountain": {
+      "title": "Fountain",
+      "exits": [
+        "go manhole"
+      ]
+    },
+    "general store": {
+      "title": "General Store",
+      "exits": [
+        "n"
+      ]
+    },
+    "guild street northern end": {
+      "title": "Guild Street, Northern End",
+      "exits": [
+        "n",
+        "s"
+      ]
+    },
+    "guild street southern end": {
+      "title": "Guild Street, Southern End",
+      "exits": [
+        "n",
+        "s"
+      ]
+    },
+    "helfgrim's blades": {
+      "title": "Helfgrim's Blades",
+      "exits": [
+        "e"
+      ]
+    },
+    "intersection of guild st. & river st.": {
+      "title": "Intersection of Guild St. & River St.",
+      "exits": [
+        "s",
+        "w"
+      ]
+    },
+    "item quantity price": {
+      "title": "Item                          Quantity    Price",
+      "exits": [
+        "s"
+      ]
+    },
+    "k": {
+      "title": "K",
+      "exits": [
+        "u"
+      ]
+    },
+    "klymacks says \"a giant rat\"": {
+      "title": "Klymacks says \"a giant rat\"",
+      "exits": [
+        "u"
+      ]
+    },
+    "klymacks says \"att acid slime\"": {
+      "title": "Klymacks says \"att acid slime\"",
+      "exits": [
+        "u"
+      ]
+    },
+    "klymacks says \"att filthbug\"": {
+      "title": "Klymacks says \"att filthbug\"",
+      "exits": [
+        "u"
+      ]
+    },
+    "klymacks says \"att giant rat\"": {
+      "title": "Klymacks says \"att giant rat\"",
+      "exits": [
+        "u"
+      ]
+    },
+    "klymacks says \"att kobold thief\"": {
+      "title": "Klymacks says \"att kobold thief\"",
+      "exits": [
+        "u"
+      ]
+    },
+    "klymacks says \"att lashworm\"": {
+      "title": "Klymacks says \"att lashworm\"",
+      "exits": [
+        "u"
+      ]
+    },
+    "klymacks says \"att t rat\"": {
+      "title": "Klymacks says \"att t rat\"",
+      "exits": [
+        "u"
+      ]
+    },
+    "klymacks says \"att tall kobold thief\"": {
+      "title": "Klymacks says \"att tall kobold thief\"",
+      "exits": [
+        "u"
+      ]
+    },
+    "lawful matt cross - apprentice": {
+      "title": "Lawful Matt Cross      -  Apprentice",
+      "exits": [
+        "d",
+        "e",
+        "n",
+        "w"
+      ]
+    },
+    "magic shoppe": {
+      "title": "Magic Shoppe",
+      "exits": [
+        "n"
+      ]
+    },
+    "newhaven adventurer's guild": {
+      "title": "Newhaven, Adventurer's Guild",
+      "exits": [
+        "s"
+      ]
+    },
+    "newhaven arena": {
+      "title": "Newhaven, Arena",
+      "exits": [
+        "d",
+        "e",
+        "n",
+        "u",
+        "w"
+      ]
+    },
+    "newhaven armour shop": {
+      "title": "Newhaven, Armour Shop",
+      "exits": [
+        "n",
+        "s",
+        "w"
+      ]
+    },
+    "newhaven betram": {
+      "title": "Newhaven, Betram",
+      "exits": [
+        "n"
+      ]
+    },
+    "newhaven docks": {
+      "title": "Newhaven, Docks",
+      "exits": [
+        "borrow skiff",
+        "n"
+      ]
+    },
+    "newhaven forest path": {
+      "title": "Newhaven, Forest Path",
+      "exits": [
+        "nw",
+        "s"
+      ]
+    },
+    "newhaven general store": {
+      "title": "Newhaven, General Store",
+      "exits": [
+        "e",
+        "n",
+        "s",
+        "w"
+      ]
+    },
+    "newhaven guild": {
+      "title": "Newhaven, Guild",
+      "exits": [
+        "s"
+      ]
+    },
+    "newhaven healer": {
+      "title": "Newhaven, Healer",
+      "exits": [
+        "e"
+      ]
+    },
+    "newhaven narrow path": {
+      "title": "Newhaven, Narrow Path",
+      "exits": [
+        "d",
+        "e",
+        "n",
+        "s",
+        "w"
+      ]
+    },
+    "newhaven narrow road": {
+      "title": "Newhaven, Narrow Road",
+      "exits": [
+        "d",
+        "e",
+        "n",
+        "s",
+        "u",
+        "w"
+      ]
+    },
+    "newhaven nathaniel": {
+      "title": "Newhaven, Nathaniel",
+      "exits": [
+        "s"
+      ]
+    },
+    "newhaven spell shop": {
+      "title": "Newhaven, Spell Shop",
+      "exits": [
+        "e",
+        "n",
+        "s",
+        "w"
+      ]
+    },
+    "newhaven village entrance": {
+      "title": "Newhaven, Village Entrance",
+      "exits": [
+        "n",
+        "s",
+        "w"
+      ]
+    },
+    "newhaven weapon shop": {
+      "title": "Newhaven, Weapon Shop",
+      "exits": [
+        "s"
+      ]
+    },
+    "newhaven weapons shop": {
+      "title": "Newhaven, Weapons Shop",
+      "exits": [
+        "n",
+        "s",
+        "w"
+      ]
+    },
+    "ninja training room": {
+      "title": "Ninja Training Room",
+      "exits": []
+    },
+    "paladin training room": {
+      "title": "Paladin Training Room",
+      "exits": []
+    },
+    "pier": {
+      "title": "Pier",
+      "exits": [
+        "borrow skiff",
+        "s"
+      ]
+    },
+    "priestly training room": {
+      "title": "Priestly Training Room",
+      "exits": [
+        "n"
+      ]
+    },
+    "sentara's clothing front room": {
+      "title": "Sentara's Clothing, Front Room",
+      "exits": [
+        "s",
+        "w"
+      ]
+    },
+    "sewer tunnel junction (below ts)": {
+      "title": "Sewer Tunnel, Junction (below TS)",
+      "exits": [
+        "u"
+      ]
+    },
+    "skali's fine armour front room": {
+      "title": "Skali's Fine Armour, Front Room",
+      "exits": [
+        "s"
+      ]
+    },
+    "temple chapel": {
+      "title": "Temple Chapel",
+      "exits": [
+        "e"
+      ]
+    },
+    "temple foyer": {
+      "title": "Temple Foyer",
+      "exits": [
+        "e",
+        "n",
+        "s",
+        "w"
+      ]
+    },
+    "temple hall": {
+      "title": "Temple Hall",
+      "exits": [
+        "e",
+        "n",
+        "s",
+        "w"
+      ]
+    },
+    "temple healer": {
+      "title": "Temple Healer",
+      "exits": [
+        "s"
+      ]
+    },
+    "temple spell store": {
+      "title": "Temple Spell Store",
+      "exits": [
+        "e",
+        "n",
+        "s",
+        "w"
+      ]
+    },
+    "temple street": {
+      "title": "Temple Street",
+      "exits": [
+        "e",
+        "n",
+        "s",
+        "w"
+      ]
+    },
+    "temple street eastern end": {
+      "title": "Temple Street, Eastern End",
+      "exits": [
+        "e",
+        "n",
+        "s",
+        "w"
+      ]
+    },
+    "town square": {
+      "title": "Town Square",
+      "exits": [
+        "e",
+        "go manhole",
+        "n",
+        "s",
+        "w"
+      ]
+    }
+  },
+  "edges": [
+    {
+      "from": "arena entrance",
+      "dir": "s",
+      "to": "town square"
+    },
+    {
+      "from": "clerical training room",
+      "dir": "s",
+      "to": "temple hall"
+    },
+    {
+      "from": "council\"",
+      "dir": "e",
+      "to": "temple street"
+    },
+    {
+      "from": "docks",
+      "dir": "e",
+      "to": "intersection of guild st. & river st."
+    },
+    {
+      "from": "docks",
+      "dir": "n",
+      "to": "pier"
+    },
+    {
+      "from": "docks",
+      "dir": "s",
+      "to": "intersection of guild st. & river st."
+    },
+    {
+      "from": "docks",
+      "dir": "search down",
+      "to": "pier"
+    },
+    {
+      "from": "fountain",
+      "dir": "go manhole",
+      "to": "sewer tunnel junction (below ts)"
+    },
+    {
+      "from": "general store",
+      "dir": "n",
+      "to": "town square"
+    },
+    {
+      "from": "guild street northern end",
+      "dir": "n",
+      "to": "intersection of guild st. & river st."
+    },
+    {
+      "from": "guild street northern end",
+      "dir": "s",
+      "to": "guild street southern end"
+    },
+    {
+      "from": "guild street southern end",
+      "dir": "n",
+      "to": "guild street northern end"
+    },
+    {
+      "from": "guild street southern end",
+      "dir": "s",
+      "to": "town square"
+    },
+    {
+      "from": "helfgrim's blades",
+      "dir": "e",
+      "to": "guild street southern end"
+    },
+    {
+      "from": "intersection of guild st. & river st.",
+      "dir": "s",
+      "to": "guild street northern end"
+    },
+    {
+      "from": "intersection of guild st. & river st.",
+      "dir": "w",
+      "to": "docks"
+    },
+    {
+      "from": "item quantity price",
+      "dir": "s",
+      "to": "newhaven narrow road"
+    },
+    {
+      "from": "k",
+      "dir": "u",
+      "to": "newhaven narrow road"
+    },
+    {
+      "from": "lawful matt cross - apprentice",
+      "dir": "u",
+      "to": "newhaven narrow road"
+    },
+    {
+      "from": "magic shoppe",
+      "dir": "n",
+      "to": "intersection of guild st. & river st."
+    },
+    {
+      "from": "newhaven adventurer's guild",
+      "dir": "s",
+      "to": "newhaven narrow road"
+    },
+    {
+      "from": "newhaven arena",
+      "dir": "u",
+      "to": "newhaven narrow road"
+    },
+    {
+      "from": "newhaven armour shop",
+      "dir": "n",
+      "to": "newhaven village entrance"
+    },
+    {
+      "from": "newhaven betram",
+      "dir": "n",
+      "to": "newhaven village entrance"
+    },
+    {
+      "from": "newhaven docks",
+      "dir": "borrow skiff",
+      "to": "pier"
+    },
+    {
+      "from": "newhaven docks",
+      "dir": "n",
+      "to": "newhaven forest path"
+    },
+    {
+      "from": "newhaven forest path",
+      "dir": "nw",
+      "to": "newhaven village entrance"
+    },
+    {
+      "from": "newhaven forest path",
+      "dir": "s",
+      "to": "newhaven docks"
+    },
+    {
+      "from": "newhaven general store",
+      "dir": "n",
+      "to": "newhaven narrow path"
+    },
+    {
+      "from": "newhaven guild",
+      "dir": "s",
+      "to": "newhaven narrow road"
+    },
+    {
+      "from": "newhaven healer",
+      "dir": "e",
+      "to": "newhaven narrow road"
+    },
+    {
+      "from": "newhaven narrow path",
+      "dir": "e",
+      "to": "newhaven village entrance"
+    },
+    {
+      "from": "newhaven narrow path",
+      "dir": "n",
+      "to": "newhaven spell shop"
+    },
+    {
+      "from": "newhaven narrow path",
+      "dir": "s",
+      "to": "newhaven general store"
+    },
+    {
+      "from": "newhaven narrow path",
+      "dir": "w",
+      "to": "newhaven narrow road"
+    },
+    {
+      "from": "newhaven narrow road",
+      "dir": "d",
+      "to": "newhaven arena"
+    },
+    {
+      "from": "newhaven narrow road",
+      "dir": "e",
+      "to": "newhaven narrow path"
+    },
+    {
+      "from": "newhaven narrow road",
+      "dir": "n",
+      "to": "newhaven spell shop"
+    },
+    {
+      "from": "newhaven narrow road",
+      "dir": "w",
+      "to": "newhaven healer"
+    },
+    {
+      "from": "newhaven nathaniel",
+      "dir": "s",
+      "to": "newhaven village entrance"
+    },
+    {
+      "from": "newhaven spell shop",
+      "dir": "s",
+      "to": "newhaven narrow path"
+    },
+    {
+      "from": "newhaven village entrance",
+      "dir": "n",
+      "to": "newhaven weapons shop"
+    },
+    {
+      "from": "newhaven village entrance",
+      "dir": "s",
+      "to": "newhaven armour shop"
+    },
+    {
+      "from": "newhaven village entrance",
+      "dir": "se",
+      "to": "newhaven forest path"
+    },
+    {
+      "from": "newhaven village entrance",
+      "dir": "w",
+      "to": "newhaven narrow path"
+    },
+    {
+      "from": "newhaven weapon shop",
+      "dir": "s",
+      "to": "newhaven village entrance"
+    },
+    {
+      "from": "newhaven weapons shop",
+      "dir": "s",
+      "to": "newhaven village entrance"
+    },
+    {
+      "from": "pier",
+      "dir": "borrow skiff",
+      "to": "newhaven docks"
+    },
+    {
+      "from": "pier",
+      "dir": "s",
+      "to": "docks"
+    },
+    {
+      "from": "priestly training room",
+      "dir": "n",
+      "to": "temple hall"
+    },
+    {
+      "from": "sentara's clothing front room",
+      "dir": "s",
+      "to": "town square"
+    },
+    {
+      "from": "sentara's clothing front room",
+      "dir": "w",
+      "to": "town square"
+    },
+    {
+      "from": "sewer tunnel junction (below ts)",
+      "dir": "u",
+      "to": "town square"
+    },
+    {
+      "from": "skali's fine armour front room",
+      "dir": "s",
+      "to": "town square"
+    },
+    {
+      "from": "temple chapel",
+      "dir": "e",
+      "to": "temple hall"
+    },
+    {
+      "from": "temple foyer",
+      "dir": "w",
+      "to": "temple hall"
+    },
+    {
+      "from": "temple hall",
+      "dir": "e",
+      "to": "temple foyer"
+    },
+    {
+      "from": "temple hall",
+      "dir": "n",
+      "to": "temple healer"
+    },
+    {
+      "from": "temple hall",
+      "dir": "s",
+      "to": "temple spell store"
+    },
+    {
+      "from": "temple healer",
+      "dir": "s",
+      "to": "temple hall"
+    },
+    {
+      "from": "temple spell store",
+      "dir": "n",
+      "to": "temple hall"
+    },
+    {
+      "from": "temple street",
+      "dir": "e",
+      "to": "town square"
+    },
+    {
+      "from": "temple street",
+      "dir": "w",
+      "to": "council\""
+    },
+    {
+      "from": "temple street eastern end",
+      "dir": "e",
+      "to": "town square"
+    },
+    {
+      "from": "temple street eastern end",
+      "dir": "w",
+      "to": "temple street"
+    },
+    {
+      "from": "town square",
+      "dir": "go manhole",
+      "to": "sewer tunnel junction (below ts)"
+    },
+    {
+      "from": "town square",
+      "dir": "n",
+      "to": "guild street southern end"
+    },
+    {
+      "from": "town square",
+      "dir": "w",
+      "to": "temple street eastern end"
+    }
+  ]
+}

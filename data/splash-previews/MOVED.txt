@@ -1,0 +1,1 @@
+Canonical copies (survive data wipes) are in client/splash-previews/

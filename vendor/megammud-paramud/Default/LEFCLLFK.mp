@@ -1,0 +1,15 @@
+[][Winterhawk]
+[LEFC:Albion River System:Lorian,  East Fork, Canal Junction]
+[LLFK:Albion River System:Lower Lorian Fork-14 9224]
+7B304011:84804110:11:-1:0:::
+7B304011:0000:sw
+38004100:0000:sw
+38004100:0000:sw
+38004100:0000:sw
+38000140:0000:w
+38000050:0000:w
+38000050:0000:w
+38000050:0000:w
+38000410:0000:nw
+38001040:0000:w
+38000050:0000:w

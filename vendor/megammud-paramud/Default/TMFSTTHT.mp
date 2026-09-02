@@ -1,0 +1,12 @@
+[][Winterhawk]
+[TMFS:Shad-Thieves Town:Temple, Main Floor Stairwell-5 248]
+[TTHT:Shad-Thieves Town:Temple, Hidden Tunnel-5 3570]
+B8050005:33E00010:8:-1:0:::
+B8050005:0000:D
+35D10005:0000:S
+E9600021:0000:E
+B4800091:0000:E
+B4800051:0000:N
+B4800055:0000:turn book stand
+B4800055:0000:S
+B4800051:0000:S

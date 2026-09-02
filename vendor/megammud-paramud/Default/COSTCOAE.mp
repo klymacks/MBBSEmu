@@ -1,0 +1,13 @@
+[][Winterhawk]
+[COST:Crimson Order:Crimson Order, Stairwell-13 3963]
+[COAE:Crimson Order:Crimson Order, Academy Entrance-13 3982]
+00A10050:91300050:9:-1:0:::
+00A10050:0000:u
+00A50000:0000:u
+00A50000:0000:u
+00A50000:0000:u
+00A50000:0000:u
+00A50000:0000:u
+00A50000:0000:u
+00A40015:0000:e
+91300050:0000:pro

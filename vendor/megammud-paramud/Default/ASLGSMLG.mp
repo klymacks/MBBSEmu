@@ -1,0 +1,14 @@
+[][Winterhawk]
+[ASLG:Shattered Expanse:Abyssal Shelf, Ledge]
+[SMLG:Shattered Expanse:Shrouded Mesa, Ledge]
+89301500:7D104111:10:-1:0:::
+89301500:0000:nw
+4FD01040:0000:w
+4FD00050:0000:w
+4FD00410:0000:nw
+4FD01040:0000:w
+4FD00410:0000:nw
+4FD01400:0000:nw
+4FD01140:0000:ne
+4FD04010:0000:e
+4FD00140:0000:ne

@@ -1,0 +1,12 @@
+[][Winterhawk]
+[SSEN:Lorthan Lowlands:Sunken Shrine, Entrance-14 9330]
+[DCOP:Lorthan Lowlands:Domed Chamber, Ornate Pool-14 10203]
+5D340400:D6605500:8:-1:0:::
+5D340400:0004:d
+20750000:0004:d
+20750000:0004:d
+20750000:0004:d
+20750000:0004:d
+20710004:0004:s
+20700005:0004:s
+20710001:0004:u

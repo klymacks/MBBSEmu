@@ -1,0 +1,16 @@
+[][Winterhawk]
+[DKCJ:Shad-Darkened Cavern:Darkened Cavern, Junction-5 3611]
+[DCPF:Shad-Darkened Cavern:Darkened Cavern, Pool's Edge]
+DB805500:97A05001:12:-1:0:::
+DB805500:0000:ne
+DB804010:0000:e
+DB800050:0000:e
+DB800044:0000:s
+DB801001:0000:se
+DB800410:0000:e
+DB801140:0000:se
+DB801440:0000:se
+DB801400:0000:se
+DB804500:0000:ne
+DB804001:0000:n
+DB800104:0000:ne

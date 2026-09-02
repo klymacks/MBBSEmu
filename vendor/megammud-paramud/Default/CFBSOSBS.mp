@@ -1,0 +1,11 @@
+[][Winterhawk]
+[CFBS:Shadowmere:Crystal Forest, Beast Shrine-2 2151]
+[OSBS:Shadowmere:Outside Beast Shrine-5 2159]
+3A300504:3A300005:7:-1:0:::
+3A300504:0000:nw
+3A301400:0000:nw
+3A301100:0000:ne
+3A304010:0000:e
+3A300054:0000:s
+3A300005:0000:s
+3A300001:0000:n

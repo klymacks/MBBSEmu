@@ -1,0 +1,49 @@
+This is an MBBSEmu Module Crash Report. This report contains detailed information 
+to help the MBBSEmu team diagnose and debug the issue this module ran into while 
+running within the emulator. 
+
+You can submit this report to the MBBSEmu team by opening an issue on GitHub at:
+https://github.com/mbbsemu/MBBSEmu/issues
+
+Please include the following information (copy/paste):
+---------------------------------------------------------------
+
+MBBSEmu v010225-183 Module Crash Report
+Date: 8/30/2026
+Time: 8:31 PM
+Operating System: Ubuntu 24.04.4 LTS
+Processor: X64
+
+Module Identifier: WCCMMUD
+Module Path: /home/klymacks/Code/Repo/Projects/majormud/modules/WCCMMUD/
+DLL Name: WCCMMUD.DLL
+DLL Size: 927381
+DLL Hash: C220D2BF
+
+Exception: Index was outside the bounds of the array.
+Stack Trace: 
+   at MBBSEmu.Btrieve.BtrieveFile.ValidateDatabase()
+   at MBBSEmu.Btrieve.BtrieveFile.LoadFile(IMessageLogger logger, String fullPath)
+   at MBBSEmu.Btrieve.BtrieveFile.LoadFile(IMessageLogger logger, String path, String fileName)
+   at MBBSEmu.Btrieve.BtrieveFileProcessor..ctor(IFileUtility fileUtility, String path, String fileName, Int32 cacheSize)
+   at MBBSEmu.HostProcess.ExportedModules.Majorbbs.opnbtv()
+   at MBBSEmu.HostProcess.ExportedModules.Majorbbs.Invoke(UInt16 ordinal, Boolean offsetsOnly)
+   at MBBSEmu.HostProcess.ExecutionUnits.ExecutionUnit.ExternalFunctionDelegate(UInt16 ordinal, UInt16 functionOrdinal)
+   at MBBSEmu.CPU.CpuCore.Op_Call()
+   at MBBSEmu.CPU.CpuCore.Tick()
+   at MBBSEmu.HostProcess.ExecutionUnits.ExecutionUnit.Execute(FarPtr entryPoint, UInt16 channelNumber, Boolean simulateCallFar, Boolean bypassState, Queue`1 initialStackValues, UInt16 initialStackPointer)
+   at MBBSEmu.Module.MbbsModule.Execute(FarPtr entryPoint, UInt16 channelNumber, Boolean simulateCallFar, Boolean bypassSetState, Queue`1 initialStackValues, UInt16 initialStackPointer)
+
+CPU Instruction: 
+call far ptr 0FFFFh:01C7h
+
+CPU Registers:
+AX=B8E2  BX=AD14  CX=0000  DX=1000  CS=0003  DS=0024  ES=1000 
+SI=0000  DI=0000  SS=0000  IP=1505  SP=FFD4  BP=FFD4 
+F=czSo
+
+Module Memory Stack:
+-------------------------------------------------------------------------
+65536 bytes, 0xFFD4 -> 0xFFD4
+-------------------------------------------------------------------------
+No Data to Display

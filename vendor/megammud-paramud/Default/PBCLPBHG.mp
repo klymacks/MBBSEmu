@@ -1,0 +1,12 @@
+[][Winterhawk]
+[PBCL:Port Blackwater:Cartographor Landron 14 310]
+[PBHG:Port Blackwater:Port Blackwater, Harbor Gate-14 164]
+56C00020:0D400059:8:-1:0:::
+56C00020:0000:e
+C8800085:0000:s
+C8800015:0000:s
+52600089:0000:s
+7FE00052:0000:e
+7FE00052:0000:e
+7FE00050:0000:e
+7FE00050:0000:e

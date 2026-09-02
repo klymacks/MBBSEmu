@@ -1,0 +1,11 @@
+[][Winterhawk]
+[MUD6:Jungle:Shallow Jungle, Mud Pit 6]
+[MUD5:Jungle:Shallow Jungle, Mud Pit 5]
+E8200100:E8200110:7:-1:0:::
+E8200100:0000:ne
+31804411:0000:nw
+31801001:0000:n
+31800104:0000:ne
+31804011:0000:n
+31800044:0000:w
+31800050:0000:w

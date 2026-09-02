@@ -1,0 +1,13 @@
+[][]
+[APOR:Darkwood Forest:Ancient Tree Portal-9 1291]
+[SPST:Darkwood Forest:Ancient Tree Spiral Stairs-9 1341]
+DEB00010:FE840001:9:-1:0:::
+DEB00010:0000:go portal
+5E200050:0000:e
+5E201041:0000:se
+5E200554:0000:s
+5E205001:0000:sw
+5E200504:0000:s
+5E201041:0000:w
+5E204410:0000:sw
+5E211140:0000:u

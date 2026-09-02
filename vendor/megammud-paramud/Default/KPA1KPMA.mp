@@ -1,0 +1,9 @@
+[][Winterhawk]
+[KPA1:Kingsport:Arcane Rarities 1]
+[KPMA:Kingsport:Market Avenue]
+F2E00044:31904555:5:-1:0:::
+F2E00044:0000:s
+31900245:0000:w
+31900055:0000:w
+31900055:0000:w
+31900054:0000:w

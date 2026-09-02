@@ -1,0 +1,11 @@
+[Keep Barracks 1st Floor N-13 2758][]
+[CBN1:Crimson Keep:Crimson Keep, North Barracks-13 2758]
+C3500019:C3500019:8:-1:0:::
+C3500019:0000:N
+FFFFFFFF:0080:hide etched adamantite geatsword
+FFFFFFFF:0080:hide 500 gold
+C3500014:0000:E
+C3500054:0000:E
+C3500044:0000:S
+C3500041:0000:W
+C3500051:0000:W

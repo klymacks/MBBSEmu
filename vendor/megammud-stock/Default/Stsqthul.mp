@@ -1,0 +1,9 @@
+[][]
+[STSQ:Silvermere:Town Square-1 224]
+[THUL:Silvermere:Thuluk's Axes-1 307]
+9D400055:83E00010:5:-1:0:::
+9D400055:0000:n
+ECE00055:0000:n
+E7000045:0000:n
+E7000055:0000:n
+E7000045:0000:w

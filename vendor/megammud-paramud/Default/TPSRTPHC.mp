@@ -1,0 +1,13 @@
+[][Winterhawk]
+[TPSR:Tagesh Highlands:Tagesh Plateau, Southern Road-14 5263]
+[TPHC:Tagesh Highlands:Tagesh Plateau, Highland Cross-14 5290]
+F1005001:A1F04510:9:-1:0:::
+F1005001:0000:n
+F1000005:0000:n
+F1000005:0000:n
+F1000104:0000:ne
+F1004010:0000:e
+F1004010:0000:ne
+F1000050:0000:e
+F1000050:0000:e
+F1000140:0000:ne

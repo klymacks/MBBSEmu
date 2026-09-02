@@ -1,0 +1,10 @@
+[][Winterhawk]
+[ARRF:Albion River System:Albion River, Fork]
+[ALND:Crownlands:Lower Albion River, North Dock-14 2340]
+C2C00414:A9710040:6:-1:0:::
+C2C00414:0000:S
+01904001:0000:SW
+01900104:0000:S
+01900005:0000:S
+01901001:0000:SE
+28201410:0000:E

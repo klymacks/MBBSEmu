@@ -1,0 +1,9 @@
+[][Winterhawk]
+[BHGE:Volcano:Gaunt One Elder-16 1839]
+[UDCJ:Volcano:Upper Deeps, Cavern Junction-16 12004]
+87B10000:7C605405:5:-1:0:::
+87B10000:0000:go hole
+CFC01000:0000:SE
+6FA00404:0000:S
+6FA01001:0000:SE
+6FA01400:0000:SE

@@ -1,0 +1,15 @@
+[][Winterhawk]
+[LEFC:Albion River System:Lorian,  East Fork, Canal Junction]
+[LEHD:Albion River System:Eastern Harbor, Docks]
+7B304011:29010110:11:-1:0:::
+7B304011:0000:e
+38000050:0000:e
+38000140:0000:ne
+38004100:0000:ne
+38004100:0000:ne
+B8804100:0000:ne
+38004001:0000:n
+38000005:0000:n
+7B300045:0000:n
+38000104:0000:ne
+02304140:0000:w

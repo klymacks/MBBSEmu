@@ -1,0 +1,12 @@
+[][]
+[NPPV:Negative Power Plane:Negative Power Plane Vortex]
+[FALA:Negative Power Plane:Fallen Angel]
+DD055500:DCF200AA:8:-1:0:::
+DD055500:0000:sw
+DCF04100:0000:sw
+DCF55500:0000:sw
+DCF04100:0000:sw
+DCF55500:0000:se
+DCF01400:0001:se
+DCF55500:0000:e
+DCF00020:0000:e

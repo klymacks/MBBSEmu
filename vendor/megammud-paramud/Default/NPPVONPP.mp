@@ -1,0 +1,15 @@
+[][Winterhawk]
+[NPPV:Negative Power Plane:Negative Power Plane Vortex]
+[ONPP:Old Mines:Old Mine Tunnel, Nightblack Portal]
+DD055500:C2501000:11:-1:0:::
+DD055500:0000:u
+DCF55500:0000:u
+DCF55500:0000:se
+DCF01400:0000:se
+DCF55500:0000:se
+DCF01400:0000:se
+DCF55500:0000:se
+DCF01400:0000:se
+DCF55500:0000:u
+DCF55500:0000:@party go portal
+C2501000:0000:l

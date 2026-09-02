@@ -1,0 +1,13 @@
+{
+  "character": "matt",
+  "given": "Matt",
+  "class": "warden",
+  "room": "willow_road",
+  "hp": 56,
+  "max_hp": 56,
+  "ma": 12,
+  "max_ma": 12,
+  "exp": 490,
+  "level": 1,
+  "gold": 0
+}

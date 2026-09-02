@@ -1,0 +1,12 @@
+[][Winterhawk]
+[TQCP:Lorthan Lowlands:The Quagmire, Concealed Path-14 9077]
+[QOTF:Lorthan Lowlands:The Quagmire, Old Trail Fork-14 9045]
+19200400:0AA01150:8:-1:0:::
+19200400:0000:go path
+0AA00140:0000:NE
+0AA04001:0000:N
+0AA00005:0000:N
+0AA00104:0000:NE
+0AA04001:0000:N
+0AA00005:0000:N
+0AA00404:0000:NW

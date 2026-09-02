@@ -1,0 +1,13 @@
+[][Winterhawk]
+[BFCT:Tagesh Highlands:Bristlewood Forest, Carved Tree-14 3449]
+[BFDE:Tagesh Highlands:Bristlewood Forest, Dead End-14 3456]
+25D00104:AAF00010:9:-1:0:::
+25D00104:0000:twist knot
+25D00104:0000:pull knot
+25D00104:0000:S
+B2404001:0000:SW
+B2404100:0000:SW
+B2400500:0000:NW
+B2401040:0000:W
+B2400410:0000:NW
+B2401040:0000:W

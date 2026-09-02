@@ -1,0 +1,5 @@
+[][Winterhawk]
+[DFDE:Darkwood Forest:Darkwood Forest, dead end near vortex]
+[VXDF:Darkwood Forest:Darkwood Forest Vortex-3 784]
+F4E00001:F4F00404:1:-1:0:::
+F4E00001:0000:n

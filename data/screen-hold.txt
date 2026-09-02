@@ -1,0 +1,25 @@
+[I] . Information                                                               
+[X] . Exit Game                                                                 
+                                                                                
+[SYSOP] . For Sysop Menu                                                        
+                                                                                
+[MAJORMUD]: sysop                                                               
+                                                                                
+[SYSOP MENU]                                                                    
+                                                                                
+C - Clear all saved evil points                                                 
+CP- Clear all saved profiles (for resetting only)                               
+U - Apply an update                                                             
+R - Reindex the Limited Items  (RF = Full reindex)                              
+D - Check for defunct MUD users, etc.                                           
+H - Check for item hoarders                                                     
+I - Sysop Instructions (wccmmud.rln)                                            
+N - Sysop Release notes (wccmmsys.rel)                                          
+S - Online Sysop Command Help (wccmmsys.not)                                    
+B - Edit the sysop bulletin file                                                
+E - Edit the wccmmud.ini file (only if it is small)                             
+L - Change the limits for defunct user checking                                 
+A - Addon module activation codes                                               
+X - Exit to Main Menu                                                           
+                                                                                
+[MAJORMUD Sysop]:                                                               

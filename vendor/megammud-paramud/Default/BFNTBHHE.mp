@@ -1,0 +1,11 @@
+[][Winterhawk]
+[BFNT:Black Foothills:Black Foothills, Narrow Trail]
+[BHHE:Black Foothills:Hilltop Encampment,]
+0BD14000:7E344000:7:-1:0:::
+0BD14000:0000:U
+0BD40001:0000:N
+0BD00005:0000:N
+0BD00404:0200:NW
+0BD01400:0000:NW
+0BD01040:0000:W
+0BD10010:0000:U

@@ -1,0 +1,9 @@
+[][Winterhawk]
+[MCFL:Baenglen:Musty Cellar, Farmer Lanford-14 5767]
+[LSCP:Baenglen:Lanford Stead, Cart Path-14 5759]
+E0110000:70800005:5:-1:0:::
+E0110000:0000:U
+2E540008:0000:S
+70800012:0000:E
+70800052:0000:E
+70800055:0000:S

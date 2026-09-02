@@ -1,0 +1,10 @@
+[][Winterhawk]
+[KPHR:Kingsport:Kingsport, Harbor Ramp]
+[KPHS:Kingsport:Harbor Square]
+BEB40040:36600055:6:-1:0:::
+BEB40040:0000:w
+03D00090:0000:w
+ABB00065:0000:w
+F5C00050:0000:w
+F5C00054:0000:w
+F5C00050:0000:w

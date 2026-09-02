@@ -1,0 +1,10 @@
+[][Winterhawk]
+[LORB:Tagesh Highlands:Lorian Shore, Beach-14 7509]
+[HSGM:Tagesh Highlands:Humble Shrine, Grand Master-14 10448]
+0FE04511:2DB00004:6:-1:0:::
+0FE04511:0000:SW
+D3D00140:0000:W
+D3D04010:0000:SW
+D3D00140:0000:W
+D3D10010:0000:U
+ECA40001:0000:N

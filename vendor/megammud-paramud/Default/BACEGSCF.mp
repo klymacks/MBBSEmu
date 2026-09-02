@@ -1,0 +1,12 @@
+[][Winterhawk]
+[BACE:Tagesh Highlands:Bone-strewn Aerie, Cliff Edge-14 4598]
+[GSCF:Tagesh Highlands:Grey Stone Cliffs, Fork-14 4445]
+43340400:8FF00054:8:-1:0:climbing harness::
+43340400:0000:D
+65211000:0000:SE
+E2C01400:0000:SE
+E2C00410:0000:E
+E2C00050:0000:E
+E2C00050:0000:E
+C3204140:0000:NE
+8FF04010:0000:E

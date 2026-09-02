@@ -1,0 +1,11 @@
+[][Winterhawk]
+[MUD4:Jungle:Shallow Jungle, Mud Pit 4 Fork]
+[MUD3:Jungle:Shallow Jungle, Mud Pit 3]
+31804504:E8201004:7:-1:0:::
+31804504:0000:nw
+E8201000:0000:se
+31804504:0000:ne
+31804400:0000:nw
+31801001:0000:n
+31800015:0000:n
+31800005:0000:n

@@ -1,0 +1,14 @@
+[][Winterhawk]
+[SRT3:Tagesh Highlands:Tagesh Highlands, Southern Road]
+[THSC:Tagesh Highlands:Southern Road, Crossroad-14 4023]
+5FF00051:5FF00055:10:-1:0:::
+5FF00051:0000:w
+5FF04010:0000:sw
+5FF04100:0000:sw
+5FF00104:0000:s
+5FF00005:0000:s
+5FF04001:0000:sw
+5FF00104:0000:s
+5FF04001:0000:sw
+5FF04100:0000:sw
+5FF00140:0000:w

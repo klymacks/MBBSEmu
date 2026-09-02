@@ -1,0 +1,11 @@
+[][Winterhawk]
+[KENT:Khazarad:Khazarad, Entry Arch]
+[GNBR:Gang Houses:Entrance Bronze House Room]
+A6E00055:18F00006:7:-1:0:::
+A6E00055:0000:n
+1AA00005:0000:n
+1AA00005:0000:n
+DA800014:0000:e
+D1D00058:0000:e
+D1D00050:0000:e
+D1D00059:0000:n

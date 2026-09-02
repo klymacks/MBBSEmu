@@ -1,0 +1,11 @@
+[][Winterhawk]
+[ARCL:Tal'kiran Ruins:Ancient Road, Clearing-13 12469]
+[TRPT:Tal'kiran Ruins:Aurean Hills, Petrified Tree-13 12554]
+B7005050:2D805001:7:-1:0:::
+B7005050:0000:w
+D9F04011:0000:n
+D9F00005:0000:n
+D9F00415:0000:e
+D9F00050:0000:e
+D9F00140:0000:ne
+D9F04100:0000:ne

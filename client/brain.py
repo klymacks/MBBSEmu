@@ -1270,10 +1270,27 @@ class Brain:
     def _in_pit(self, state: WorldState) -> bool:
         if paths.is_dangerous(state.room):
             return True
+        if paths.in_temple(state.room):
+            return False
         low = state.room.lower()
         if any(
             word in low
-            for word in ("road", "path", "entrance", "shop", "healer", "guild", "store")
+            for word in (
+                "road",
+                "path",
+                "entrance",
+                "shop",
+                "healer",
+                "guild",
+                "store",
+                "square",
+                "street",
+                "docks",
+                "pier",
+                "temple",
+                "fountain",
+                "gates",
+            )
         ):
             return False
         return self._in_camp
@@ -1306,7 +1323,7 @@ class Brain:
             and not self._party_ready(state)
         ):
             return False
-        return paths.step_toward_arena(state.room, state.exits) == "d"
+        return paths.is_farm_drop(paths.step_toward_arena(state.room, state.exits))
 
     def _down(self, state: WorldState) -> bool:
         return self._sitting or state.resting
@@ -1523,7 +1540,7 @@ class Brain:
         return not state.scanned
 
     def _arena_drop(self, state: WorldState) -> bool:
-        return paths.step_toward_arena(state.room, state.exits) == "d"
+        return paths.is_farm_drop(paths.step_toward_arena(state.room, state.exits))
 
     def _should_leave_to_sneak(self, state: WorldState) -> bool:
         """A listed lop is a fight. Do not walk off to sn first."""
@@ -1605,7 +1622,8 @@ class Brain:
             self._travel(send, "u", state, sneak=False)
             return True
         if self._arena_drop(state):
-            self._travel(send, "d", state, sneak=False)
+            drop = paths.step_toward_arena(state.room, state.exits) or "d"
+            self._travel(send, drop, state, sneak=False)
             return True
         step = paths.step_toward_arena(state.room, state.exits)
         if not step:
@@ -1632,12 +1650,12 @@ class Brain:
             self._need_break = False
         parts = text.split()
         step = ""
-        if text in {"n", "s", "e", "w", "u", "d"}:
+        if text in realm_map.DIRS:
             step = text
         elif (
             len(parts) == 3
             and parts[0].lower() == "drag"
-            and parts[2].lower() in {"n", "s", "e", "w", "u", "d"}
+            and parts[2].lower() in realm_map.CARDINALS
         ):
             step = parts[2].lower()
         if step:
@@ -1663,9 +1681,22 @@ class Brain:
             state.look_scan = True
             state.saw_here = False
             state.saw_see = False
-            if "arena" not in state.room.lower():
+            if not paths.in_silvermere(state.room) and "arena" not in state.room.lower():
                 state.room = "Newhaven, Arena"
             state.exits = [x for x in state.exits if x != "d"]
+        elif step == "go manhole":
+            self._in_camp = True
+            self._pit_fight = True
+            self._drop_scan = True
+            state.mobs = []
+            state.things = []
+            state.scanned = False
+            state.look_scan = True
+            state.saw_here = False
+            state.saw_see = False
+            if "sewer" not in state.room.lower():
+                state.room = "Sewer Tunnel, Junction (below TS)"
+            state.exits = ["u", "n", "s", "e", "w"]
         elif step == "u":
             self._in_camp = False
             self._pit_fight = False
@@ -1674,7 +1705,9 @@ class Brain:
             state.mobs = []
             state.things = []
             state.scanned = False
-            if "arena" in state.room.lower():
+            if "sewer" in state.room.lower():
+                state.room = "Town Square"
+            elif "arena" in state.room.lower():
                 state.room = "Newhaven, Narrow Road"
                 state.exits = ["n", "e", "w", "d", "s"]
 
@@ -1682,7 +1715,11 @@ class Brain:
         self, send, step: str, state: WorldState, *, sneak: bool = True
     ) -> None:
         """Move. Ninja ambush sneaks first on an empty room; never with lops."""
-        if step in realm_map.DIRS and state.exits and step not in state.exits:
+        if (
+            step in realm_map.CARDINALS
+            and state.exits
+            and step not in state.exits
+        ):
             self.next_action = "looking"
             if not self._busy_swing(state):
                 self._cmd(send, "look", state)
@@ -1690,7 +1727,7 @@ class Brain:
         if (
             sneak
             and self._own_ambush(state)
-            and step in realm_map.DIRS
+            and step in realm_map.CARDINALS
             and not state.in_combat
             and not self._attacking
         ):
@@ -1722,7 +1759,11 @@ class Brain:
     def _go(self, send, step: str, state: WorldState) -> bool:
         if not step:
             return False
-        if state.exits and step not in state.exits:
+        if (
+            state.exits
+            and step not in state.exits
+            and not paths.is_special_step(step)
+        ):
             return False
         if not state.exits and self.mode == "gear":
             return False
@@ -2123,7 +2164,8 @@ class Brain:
         if paths.is_spell_shop(room):
             if not self._spells_shopped and self._shop_one_spell(state, send):
                 return
-            if not self._go(send, "s", state):
+            step = paths.leave_spell_shop(state.room, state.exits)
+            if not step or not self._go(send, step, state):
                 self._cmd(send, "look", state)
             return
         if paths.is_dangerous(room):
@@ -2175,7 +2217,9 @@ class Brain:
             self._done_gear()
             return
         if self._kit_ready() and not self._spells_shopped:
-            step = paths.step_toward_spell_shop(state.room, state.exits)
+            step = paths.step_toward_spell_shop(
+                state.room, state.exits, via=self._last_step, prev=self._step_room
+            )
             if step and self._go(send, step, state):
                 return
             self._cmd(send, "look", state)
@@ -2724,7 +2768,8 @@ class Brain:
             if self._setup_sneak(send, state):
                 return
             if self._sneak_ready():
-                self._travel(send, "d", state)
+                drop = paths.step_toward_arena(state.room, state.exits) or "d"
+                self._travel(send, drop, state)
                 return
             return
         if self._with_leader(state):

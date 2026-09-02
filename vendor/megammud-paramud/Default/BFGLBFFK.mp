@@ -1,0 +1,16 @@
+[][Winterhawk]
+[BFGL:Bristlewood Forest:Bristlewood Forest, Grassy Lndng-14 4143]
+[BFFK:Bristlewood Forest:Bristlewood Forest, Fork-14 3494]
+CF610040:3E604105:12:-1:0:log raft::
+CF610040:0000:u
+D0540010:0000:e
+3E600050:0000:e
+3E600440:0000:nw
+3E601001:0000:n
+3E600014:0000:e
+3E601040:0000:se
+3E601400:0000:se
+3E600405:0000:s
+3E600005:0000:s
+3E601001:0000:se
+3E600504:0000:ne

@@ -1,0 +1,13 @@
+[][Winterhawk]
+[GVWE:Bristlewood Forest:Ghille Village, West Entrance-14 2898]
+[TSR1:Tagesh Highlands:Tagesh Highlands, Southern Road-14 3994]
+F1F00050:5FF40040:9:-1:0:::
+F1F00050:0000:w
+5FF00050:0000:w
+5FF04010:0000:sw
+5A704100:0000:sw
+5FF04100:0000:sw
+5FF00140:0000:w
+5FF00050:0000:w
+5FF00050:0000:w
+5FF10010:0000:u

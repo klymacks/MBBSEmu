@@ -1,0 +1,8 @@
+[][Winterhawk]
+[RIOV:Ancient Ruin:Rock Island, Ore Vein-17 9640]
+[AFBP:Ancient Fortress:Burning Plains-17 9507]
+8E100010:8AB01544:4:-1:0:::
+8E100010:0000:E
+8AB00045:0000:S
+8AB05001:0000:SW
+8AB04100:0000:SW

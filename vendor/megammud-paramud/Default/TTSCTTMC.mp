@@ -1,0 +1,9 @@
+[][Winterhawk]
+[TTSC:Shadowmere:The Silver Cocoon-5 532]
+[TTMC:Shad-Thieves Town:The Merry Cobbler-5 533]
+9DD00004:98200004:5:-1:0:::
+9DD00004:0000:S
+E5300051:0000:E
+E5300050:0000:E
+E5300050:0000:E
+E5300051:0000:N

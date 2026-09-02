@@ -1,0 +1,14 @@
+[][Winterhawk]
+[STPE:Swamp of Tharollok:Swamp of Tharollok, Path End-13 2933]
+[CKDC:Crimson Keep:Crimson Keep, Dungeon Cell]
+D6C44000:BE340080:10:-1:0:::
+D6C44000:0000:d
+46450000:0000:d
+90650000:0000:d
+90650000:0000:d
+90610040:0000:w
+90600050:0000:w
+90600050:0000:w
+90610010:0000:u
+90650000:0000:u
+90650000:0000:u

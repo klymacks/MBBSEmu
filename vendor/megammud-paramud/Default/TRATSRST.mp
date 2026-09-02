@@ -1,0 +1,10 @@
+[][Winterhawk]
+[TRAT:Silvermere:Trina's Exotic Armours]
+[SRST:Silvermere:River St & Guild St]
+0F900010:01B00054:6:-1:0:::
+0F900010:0000:E
+E7000055:0000:N
+05900055:0000:N
+E7000005:0000:N
+E7000005:0000:N
+E5000015:0000:N

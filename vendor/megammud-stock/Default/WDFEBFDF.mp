@@ -1,0 +1,11 @@
+[][]
+[WDFE:Blackwood Forest:Dying Fields, West Side-17 2632]
+[BFDF:Blackwood Forest:Dying Fields-17 2647]
+57201001:57204011:7:-1:0:::
+57201001:0000:se
+57201500:0000:ne
+57204410:0000:e
+57201140:0000:se
+57200410:0000:e
+57200141:0000:ne
+57204100:0000:ne

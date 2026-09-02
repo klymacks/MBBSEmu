@@ -1,0 +1,11 @@
+[][Winterhawk]
+[MUD2:Jungle:Shallow Jungle, Mud Pit 2]
+[MUD1:Jungle:Shallow Jungle, Mud Pit 1]
+E8200010:E8201000:7:-1:0:::
+E8200010:0000:e
+31801150:0000:ne
+31804011:0000:n
+31800045:0000:w
+31800014:0000:s
+31800041:0000:w
+31800410:0000:nw

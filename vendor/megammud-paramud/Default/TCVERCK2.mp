@@ -1,0 +1,12 @@
+[][Winterhawk]
+[TCVE:Rocky Trail:Torchlit Caverns]
+[RCK2:Rocky Trail:Rocky Trail (Titan Fork)]
+E6300550:92501140:8:-1:0:::
+E6300550:0000:e
+92500050:0000:e
+92500050:0000:e
+92501140:0000:se
+92500404:0000:s
+92504001:0000:sw
+92540100:0000:d
+92514000:0000:sw

@@ -1,0 +1,12 @@
+[][Winterhawk]
+[RCF2:Khazarad:Redstone Cave, fork 2]
+[RCF1:Khazarad:Redstone Cave, fork]
+1AE00045:1AE00405:8:-1:0:::
+1AE00045:0000:n
+F2300005:0000:n
+F2300005:0000:n
+F2300104:0000:ne
+F2304010:0000:e
+F2300050:0000:e
+F2300050:0000:e
+F2301040:0000:se

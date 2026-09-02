@@ -1,0 +1,10 @@
+[][Winterhawk]
+[NSWP:Lorthan Lowlands:Narrow Swamp Path 14 9500]
+[LLMR:Lorthan Lowlands:Lorthan, Marsh Road Fork-14 9493]
+85A04410:2C900045:6:-1:0:::
+85A04410:0000:E
+85A00050:0000:E
+85A00050:0000:E
+85A00050:0000:E
+85A00050:0000:E
+85A00050:0000:E

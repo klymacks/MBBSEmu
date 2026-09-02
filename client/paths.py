@@ -1,13 +1,15 @@
-"""NewHaven rooms recorded from a live walk on Finn's Realm (1.11p).
+"""NewHaven and Silvermere rooms recorded from 1.11p + MegaMMUD stock paths.
 
-Village Entrance: south armour (Betram), north weapons, west to the path.
+Village Entrance: south armour (Betram), north weapons, west to the path,
+southeast to the forest path and the Newhaven docks (`borrow skiff`).
 Narrow Path: south general store, north spell shop, west to the road.
 Narrow Road: down into the arena (filthbugs), north guild, west healer.
 
-MegaMMUD v2.1 Stock .mp files use the same graph (Newhaven Town = Narrow Road,
-Temple Healer = healer, shops Betram / Nathaniel / Dathalar / Rayth). Arena
-farm is u then d. Do not import Paramud rooms or the cave-bear / Silvermere
-legs.
+Silvermere hub is Town Square. `go manhole` drops into the sewers (the next
+exp loop). Docks / Pier: `borrow skiff` (or `search down` then north) back to
+Newhaven. Shops: Helfgrim, Skali, Sentara, Giovanni, Temple Spell Store.
+
+MegaMMUD v2.1 Stock .mp files use the same graph. Do not import Paramud rooms.
 """
 
 from __future__ import annotations
@@ -68,6 +70,20 @@ FRIENDLY = (
     "dathalar",
     "shopkeeper",
     "guard",
+    "giovanni",
+    "helfgrim",
+    "skali",
+    "sentara",
+    "aiken",
+    "boatman",
+    "priest",
+    "bishop",
+    "jael",
+    "thuluk",
+    "colin",
+    "meia",
+    "godfrey",
+    "lionheart",
 )
 HOME_ACCOUNTS = ("klymacks", "sysop", "guest", "matt")
 _BAD_MOB = (
@@ -210,23 +226,42 @@ def extra_starter(
 
 def is_weapon_shop(room: str) -> bool:
     low = room.lower()
-    return "weapon" in low or "nathaniel" in low
+    return (
+        "weapon" in low
+        or "nathaniel" in low
+        or "helfgrim" in low
+        or "blades" in low
+        or "sword shop" in low
+    )
 
 
 def is_armour_shop(room: str) -> bool:
     low = room.lower()
-    return "armour" in low or "armor" in low or "betram" in low or "bertram" in low
+    return (
+        "armour" in low
+        or "armor" in low
+        or "betram" in low
+        or "bertram" in low
+        or "skali" in low
+        or "sentara" in low
+        or "leather" in low
+    )
 
 
 def is_general_store(room: str) -> bool:
     low = room.lower()
-    return "general store" in low or "general" in low
+    return "general store" in low or "giovanni" in low
 
 
 def is_spell_shop(room: str) -> bool:
-    """Newhaven Spell Shop / Dathalar, north of Narrow Path."""
+    """Newhaven Spell Shop / Dathalar, or Silvermere Temple / Magic Shoppe."""
     low = room.lower()
-    return "spell" in low or "dathalar" in low
+    return (
+        "spell shop" in low
+        or "spell store" in low
+        or "dathalar" in low
+        or "magic shoppe" in low
+    )
 
 
 SHOP_WORDS = (
@@ -240,9 +275,60 @@ SHOP_WORDS = (
     "bertram",
     "nathaniel",
     "dathalar",
+    "helfgrim",
+    "skali",
+    "sentara",
+    "giovanni",
+    "blades",
+    "leather",
 )
 
 ARENA_WORDS = ("arena", "pit", "dungeon", "sewer", "slum")
+SPECIAL_STEPS = frozenset({"borrow skiff", "search down", "go manhole"})
+FARM_DROPS = frozenset({"d", "go manhole"})
+_SILVERMERE_HINTS = (
+    "town square",
+    "guild street",
+    "river street",
+    "sovereign",
+    "silver street",
+    "brass street",
+    "oak street",
+    "crown street",
+    "estwall",
+    "town gates",
+    "helfgrim",
+    "skali",
+    "sentara",
+    "magic shoppe",
+    "temple hall",
+    "temple spell",
+    "temple healer",
+    "temple entrance",
+    "temple chapel",
+    "temple street",
+    "clerical training",
+    "priestly training",
+    "priest's quarters",
+    "marble passage",
+    "halls of the dead",
+    "adventurer's guild",
+    "paladin training",
+    "ninja training",
+    "arena entrance",
+    "arena practice",
+    "arena stands",
+    "sewer",
+    "fountain",
+    "boathouse",
+    "homely hearth",
+    "bank of godfrey",
+    "wailing",
+    "wharf",
+    "intersection of",
+    "park street",
+    "park plaza",
+)
 _GIVEN_RE = re.compile(r"^[A-Z][a-z]{1,14}$")
 _GLUE_GIVEN_RE = re.compile(r"^(.+?)([A-Z][a-z]{1,14})$")
 _DIR_TOKENS = frozenset({"n", "s", "e", "w", "u", "d", "ne", "nw", "se", "sw"})
@@ -658,9 +744,69 @@ def is_shop(room: str, mobs: list[str], flagged: bool) -> bool:
     return any(word in blob for word in SHOP_WORDS)
 
 
-def is_dangerous(room: str) -> bool:
+def is_special_step(step: str) -> bool:
+    return step.strip().lower() in SPECIAL_STEPS
+
+
+def is_farm_drop(step: str | None) -> bool:
+    return bool(step) and step.strip().lower() in FARM_DROPS
+
+
+def in_newhaven(room: str) -> bool:
+    return "newhaven" in room.lower()
+
+
+def in_silvermere(room: str) -> bool:
     low = room.lower()
-    return any(word in low for word in ARENA_WORDS)
+    if in_newhaven(low):
+        return False
+    if low in {"docks", "pier", "park"}:
+        return True
+    if in_temple(low) or "temple street" in low:
+        return True
+    return any(hint in low for hint in _SILVERMERE_HINTS)
+
+
+def in_temple(room: str) -> bool:
+    """Inside the Silvermere temple building — not Temple Street outside."""
+    low = room.lower()
+    if "temple street" in low:
+        return False
+    return any(
+        hint in low
+        for hint in (
+            "temple hall",
+            "temple spell",
+            "temple healer",
+            "temple chapel",
+            "temple entrance",
+            "clerical training",
+            "priestly training",
+            "priest's quarters",
+            "marble passage",
+            "halls of the dead",
+        )
+    )
+
+
+def at_farm(room: str) -> bool:
+    """Newhaven pit or Silvermere sewers — not the temple catacombs."""
+    low = room.lower()
+    if "sewer" in low or "slum" in low:
+        return True
+    if "newhaven" in low and "arena" in low:
+        return True
+    return False
+
+
+def is_dangerous(room: str) -> bool:
+    """A hunt camp. Silvermere arena stands are streets, not the farm."""
+    low = room.lower()
+    if at_farm(low):
+        return True
+    if any(word in low for word in ("entrance", "stands", "concession", "practice")):
+        return False
+    return "arena" in low or "pit" in low
 
 
 def gear_index_for_room(room: str) -> int:
@@ -680,9 +826,153 @@ def leave_dead_end(room: str, exits: list[str]) -> str | None:
     return step_toward_arena(room, exits)
 
 
+def leave_spell_shop(room: str, exits: list[str] | None = None) -> str | None:
+    """Newhaven spell shop exits south; Temple Spell Store exits north."""
+    low = room.lower()
+    prefer = ("n", "e") if "temple" in low else ("s", "n", "e", "w")
+    for step in prefer:
+        got = _open_step(step, exits)
+        if got:
+            return got
+    return None
+
+
+def _first_open(prefer: tuple[str, ...], exits: list[str] | None) -> str | None:
+    for step in prefer:
+        got = _open_step(step, exits)
+        if got:
+            return got
+    return None
+
+
+def step_out_temple(room: str, exits: list[str] | None = None) -> str | None:
+    """East is the street. West is chapel. Down from the healer is catacombs."""
+    low = room.lower()
+    if "spell" in low:
+        return _open_step("n", exits)
+    if "healer" in low:
+        return _open_step("s", exits)
+    if "clerical" in low:
+        return _open_step("s", exits)
+    if "priestly" in low:
+        return _open_step("n", exits)
+    if "priest's" in low:
+        return _first_open(("e", "n", "s"), exits)
+    if "chapel" in low:
+        return _first_open(("e", "n"), exits)
+    if any(word in low for word in ("marble", "halls of the dead", "dungeon")):
+        return _first_open(("u", "e", "n", "s"), exits)
+    # Several rooms share the title Temple Hall. East is always toward the door.
+    return _first_open(("e", "n", "s", "u"), exits)
+
+
+def step_toward_square(room: str, exits: list[str] | None = None) -> str | None:
+    """One step toward Silvermere Town Square."""
+    low = room.lower()
+    step: str | None
+    if "town square" in low:
+        step = None
+    elif "sewer" in low:
+        step = "u"
+    elif "guild street, southern" in low:
+        step = "s"
+    elif "guild street, northern" in low:
+        step = "s"
+    elif "guild street" in low:
+        step = "s"
+    elif "intersection of guild" in low:
+        step = "s"
+    elif "river street" in low:
+        step = "e"
+    elif low == "docks" or "wharf" in low:
+        step = "s"
+    elif low == "pier":
+        step = "s"
+    elif "boathouse" in low:
+        step = "w"
+    elif "town gates" in low or "silver street" in low or "estwall" in low:
+        step = "w"
+    elif "sovereign" in low:
+        step = "n"
+    elif "temple street" in low:
+        step = "e"
+    elif in_temple(low):
+        return step_out_temple(room, exits)
+    elif "helfgrim" in low:
+        step = "e"
+    elif "skali" in low or "sentara" in low:
+        step = "s"
+    elif is_general_store(low):
+        step = "n"
+    elif "magic shoppe" in low:
+        step = "n"
+    elif "adventurer's guild" in low:
+        step = "w"
+    elif "arena" in low:
+        step = "s"
+    elif "brass street" in low:
+        step = "s"
+    elif "oak street" in low or "crown street" in low:
+        step = "w"
+    elif "fountain" in low:
+        step = "n"
+    else:
+        step = None
+    return _open_step(step, exits)
+
+
+def step_toward_sewers(room: str, exits: list[str] | None = None) -> str | None:
+    """Town Square `go manhole`, or walk toward the square first."""
+    low = room.lower()
+    if "sewer" in low:
+        return None
+    if "town square" in low or low == "fountain":
+        return _open_step("go manhole", exits)
+    return step_toward_square(room, exits)
+
+
+def step_toward_newhaven(room: str, exits: list[str] | None = None) -> str | None:
+    """Skiff back to newbie land: west to docks, north onto the pier, borrow skiff."""
+    low = room.lower()
+    step: str | None
+    if in_newhaven(low):
+        if "docks" in low:
+            step = "n"
+        elif "forest path" in low:
+            step = "nw"
+        elif "village entrance" in low:
+            step = None
+        else:
+            return step_toward_arena(room, exits)
+    elif low == "pier":
+        step = "borrow skiff"
+    elif low == "docks" or "wharf" in low:
+        step = "n"
+    elif "boathouse" in low:
+        step = "w"
+    elif "river street" in low or "intersection of guild" in low:
+        step = "w"
+    elif "guild street, northern" in low:
+        step = "n"
+    elif "guild street" in low or "town square" in low:
+        step = "n"
+    elif "sewer" in low:
+        step = "u"
+    else:
+        hub = step_toward_square(room, exits)
+        return hub
+    return _open_step(step, exits)
+
+
 def step_toward_store(room: str, exits: list[str] | None = None) -> str | None:
     """Narrow Road east to the path, south into the general store."""
     low = room.lower()
+    if in_silvermere(room) and not in_newhaven(room):
+        if is_general_store(low):
+            return None
+        if "town square" in low:
+            return _open_step("e", exits)
+        return step_toward_square(room, exits)
     step: str | None
     if "general" in low:
         step = None
@@ -709,13 +999,37 @@ def step_toward_store(room: str, exits: list[str] | None = None) -> str | None:
     return _open_step(step, exits)
 
 
-def step_toward_spell_shop(room: str, exits: list[str] | None = None) -> str | None:
-    """One step toward Newhaven Spell Shop (north of Narrow Path)."""
+def step_toward_spell_shop(
+    room: str,
+    exits: list[str] | None = None,
+    via: str = "",
+    prev: str = "",
+) -> str | None:
+    """Newhaven Spell Shop, or Silvermere Temple Spell Store west of the square.
+
+    Temple Hall is two rooms with the same name. `s` is the shop only just after
+    walking in from Temple Street. Any other Temple Hall: `e` toward the door.
+    """
     low = room.lower()
-    step: str | None
     if is_spell_shop(low):
-        step = None
-    elif any(word in low for word in ARENA_WORDS):
+        return None
+    if "temple street" in low:
+        return _open_step("w", exits)
+    if "town square" in low:
+        return _open_step("w", exits)
+    if in_temple(room):
+        if "healer" in low:
+            return _open_step("s", exits)
+        if "temple hall" in low or "temple entrance" in low:
+            from_street = "temple street" in prev.lower() and via.strip().lower() == "w"
+            if from_street:
+                return _open_step("s", exits)
+            return step_out_temple(room, exits)
+        return step_out_temple(room, exits)
+    if in_silvermere(room):
+        return step_toward_square(room, exits)
+    step: str | None
+    if any(word in low for word in ARENA_WORDS):
         step = "u"
     elif "healer" in low:
         step = "e"
@@ -739,17 +1053,32 @@ def step_toward_spell_shop(room: str, exits: list[str] | None = None) -> str | N
 
 
 def is_trainer(room: str) -> bool:
-    """Newhaven guild, north of Narrow Road."""
-    return "guild" in room.lower()
+    """Newhaven guild hall or a class training room — not Guild Street."""
+    low = room.lower()
+    if "street" in low:
+        return False
+    if "training room" in low or "universal trainer" in low:
+        return True
+    return "newhaven" in low and "guild" in low
 
 
 def step_toward_guild(room: str, exits: list[str] | None = None) -> str | None:
-    """One step toward the Newhaven guild (trainer), north of Narrow Road."""
+    """Newhaven guild north of Narrow Road, or Silvermere class training rooms."""
     low = room.lower()
-    step: str | None
     if is_trainer(low):
-        step = None
-    elif any(word in low for word in ARENA_WORDS):
+        return None
+    if in_silvermere(room):
+        if "adventurer's guild, foyer" in low:
+            return _open_step("e", exits)
+        if "adventurer's guild, main" in low:
+            return _open_step("s", exits)
+        if "town square" in low:
+            return _open_step("n", exits)
+        if "guild street, southern" in low:
+            return _open_step("n", exits)
+        return step_toward_square(room, exits)
+    step: str | None
+    if any(word in low for word in ARENA_WORDS):
         step = "u"
     elif "healer" in low:
         step = "e"
@@ -772,9 +1101,13 @@ def step_toward_guild(room: str, exits: list[str] | None = None) -> str | None:
     return _open_step(step, exits)
 
 
-def step_toward_arena(room: str, exits: list[str]) -> str | None:
-    """One step toward Narrow Road, then down into the arena."""
+def step_toward_arena(room: str, exits: list[str] | None = None) -> str | None:
+    """Newhaven pit (`d`) or Silvermere sewers (`go manhole`)."""
     low = room.lower()
+    if at_farm(low):
+        return None
+    if in_silvermere(room):
+        return step_toward_sewers(room, exits)
     step: str | None
     if any(word in low for word in ARENA_WORDS):
         step = None
@@ -804,6 +1137,9 @@ def step_toward_arena(room: str, exits: list[str]) -> str | None:
 def _open_step(step: str | None, exits: list[str] | None) -> str | None:
     if not step:
         return None
-    if exits and step not in exits:
+    low = step.strip().lower()
+    if is_special_step(low):
+        return low
+    if exits and low not in exits:
         return None
-    return step
+    return low

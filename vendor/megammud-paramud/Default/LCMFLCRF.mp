@@ -1,0 +1,20 @@
+[][Winterhawk]
+[LCMF:Scorching Desert:Limestone Caverns, Manscorpion Fork]
+[LCRF:Scorching Desert:Limestone Caverns, Manscorpion room fork]
+C5804500:C5801500:16:-1:0:::
+C5804500:0000:ne
+C5804010:0000:e
+C5800140:0000:ne
+C5804100:0000:ne
+C5804100:0000:ne
+C5804100:0000:ne
+C5805001:0000:se
+C5801400:0000:se
+C5801400:0000:se
+C5801400:0000:se
+C5801400:0000:se
+C5801500:0000:ne
+C5801500:0000:ne
+C5804100:0000:ne
+C5805400:0000:se
+C5801400:0000:se

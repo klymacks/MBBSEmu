@@ -1,0 +1,14 @@
+[][Winterhaek]
+[RBHT:Blackwood Forest:HangingTree]
+[BFGS:Blackwood Forest:Blackwood Forest, Garden Southern Fork]
+13800004:CCC00504:10:-1:0:::
+13800004:0000:s
+CCC01001:0000:se
+CCC01400:0000:se
+CCC00404:0000:s
+CCC04001:0000:sw
+CCC04100:0000:sw
+CCC01100:0000:se
+CCC00404:0000:s
+CCC00005:0000:s
+CCC04001:0000:sw

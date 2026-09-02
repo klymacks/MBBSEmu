@@ -1,0 +1,10 @@
+[][Winterhawk]
+[VDLD:Vale of Durand:Lord Durand]
+[VDCF:Vale of Durand:Caer Fenwyn, Castle Yard]
+3CC00001:ADB00056:6:-1:0:::
+3CC00001:0000:N
+EC800045:0000:N
+EC800005:0000:N
+CEE00055:0000:N
+84000055:0000:N
+ADB00009:0000:N

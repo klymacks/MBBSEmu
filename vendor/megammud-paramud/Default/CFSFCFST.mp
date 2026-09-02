@@ -1,0 +1,13 @@
+[][Winterhawk]
+[CFSF:Lava Fields:Crimson Fortress, Second Floor]
+[CFST:Lava Fields:Crimson Fortress, Hallway South T]
+B2600058:B2600051:9:-1:0:::
+B2600058:0000:e
+B2600054:0000:e
+B2600058:0000:e
+B2600244:0000:s
+B2600005:0000:s
+B2600045:0000:s
+B2600005:0000:s
+B2601041:0000:w
+B2600050:0000:w

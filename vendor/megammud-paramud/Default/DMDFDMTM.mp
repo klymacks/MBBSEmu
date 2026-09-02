@@ -1,0 +1,14 @@
+[][Winterhawk]
+[DMDF:Dwarven Mines:Diamond Mine (Devil Fiend area)]
+[DMTM:Dwarven Mines:Diamond Mine Tunnel, Mammoth Fork]
+70C00504:70C04500:10:-1:0:::
+70C00504:0000:s
+70C04001:0000:sw
+70C00104:0000:s
+70C04001:0000:sw
+70C00140:0000:w
+70C00050:0000:w
+70C00014:0000:s
+70C04001:0000:sw
+70C01100:0000:se
+70C01400:0000:se

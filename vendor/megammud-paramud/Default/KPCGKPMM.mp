@@ -1,0 +1,9 @@
+[][Winterhawk]
+[KPCG:Kingsport:Kingsport, Castle Gates-14 1145]
+[KPMM:Kingsport:Magister Melnor-14 1286]
+4E305056:B5100022:5:-1:0:::
+4E305056:0000:n
+EC80000A:0000:n
+6D000059:0000:n
+C5E00055:0000:w
+54100091:0000:w

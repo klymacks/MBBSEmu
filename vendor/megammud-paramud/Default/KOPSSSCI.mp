@@ -1,0 +1,12 @@
+[][Winterhawk]
+[KOPS:Khazarad:Ornate Passageway, Stairwell]
+[SSCI:Khazarad:Spiral Stairwell, Cave-In]
+C3C10081:02F40040:8:-1:0:::
+C3C10081:0000:u
+67950000:0000:u
+67950000:0000:u
+67950000:0000:u
+67950000:0000:u
+67950000:0000:u
+67950000:0000:u
+67950000:0000:u

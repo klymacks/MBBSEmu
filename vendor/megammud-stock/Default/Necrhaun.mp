@@ -1,0 +1,8 @@
+[][]
+[NECR:Mossy Tunnels:Necromancer-9 1431]
+[HAUN:Mossy Tunnels:Haunting Spirit-9 1177]
+24F00040:4CD00100:4:-1:0:::
+24F00040:0001:w
+28400014:0001:s
+28400005:0001:s
+28400005:0001:s

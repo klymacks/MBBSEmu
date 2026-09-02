@@ -1,0 +1,141 @@
+╔══════════════════════════════════════════════════════════╗
+║█████████████████▄███████▄███████▄████████████████████████║
+║██████████████▀▀██████▀▀██████▀▀▀▀███▀▀▀▀█████████████████║
+║██████████████████▀███████▀███████████████████████████████║
+║███▀███▀██████▀▀██████▀▀███▀▀▀▀██████▀▀▀████▀███▀█████████║
+║████▀▀▀███████████▀███████▀██████████████████▀▀▀████▀████▀║
+║▀▀▀█████▀▀▀▀▀▀▀▀▀▀█▀▀▀▀▀▀▀█▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀█████▀▀▀█▀▀▀▀▀║
+║██████████████╘═╡ The MajorBBS Emulator ╞═╛███████████████║
+║████████████████│ By: MBBSEmu Community │█████████████████║
+║                │https://www.mbbsemu.com│                 ║
+╚══════════════════════════════════════════════════════════╝
+Enter Username or enter "NEW" to create a new Account
+Username: klymacks
+Password: *********
+Fantasy awaits you in MajorMUD v1.11p-WG!
+Please select one of the following:
+   M ... MajorMUD
+Main Menu
+Make your selection (X to exit): M
+ M A J O R  M U D v1.11p-WG (Dec 30 2005 14:20:05)
+{Realm Of Legends}
+*ANSI RECOMMENDED*
+[E] . Enter the Realm
+[H] . Help
+[A] . About the Game
+[C] . Game Counts
+[T] . Topten Adventurers
+[G] . Topten Gangs
+[W] . Who's in the Realm
+[R] . Release Notes
+[I] . Information
+[X] . Exit Game
+[SYSOP] . For Sysop Menu
+[MAJORMUD]: E
+Last time you were on, you disconnected while playing.
+The gods have punished you appropriately.
+MajorMUD - ROL
+=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+Newhaven, Arena
+    This huge room is has been carved into the earth with crude work- manship.
+The blood-soaked floor is covered in broken, rusted weaponry and some things
+better left unmentioned. A huge iron gate sits in the west wall, and behind it
+you can hear the growling of some unfathomable beast. A large black door is set
+in the northern wall.
+Also here: filthbug.
+Obvious exits: closed door north, up
+[HP=28]:
+look
+Newhaven, Arena
+    This huge room is has been carved into the earth with crude work- manship.
+The blood-soaked floor is covered in broken, rusted weaponry and some things
+better left unmentioned. A huge iron gate sits in the west wall, and behind it
+you can hear the growling of some unfathomable beast. A large black door is set
+in the northern wall.
+Also here: filthbug.
+Obvious exits: closed door north, up
+[HP=28]:
+inventory
+You are carrying padded vest (Torso), padded gloves (Hands), padded helm (Head),
+padded pants (Legs), padded boots (Feet), club (Weapon Hand), club, 3 padded
+boots, 3 padded gloves, 3 padded helm, 3 padded pants, 3 padded vest, torch
+You have no keys.
+Wealth: 0 copper farthings
+Encumbrance: 1940/2400 - Heavy [80%]
+[HP=28]:
+The filthbug swipes at you with its claws!
+[HP=28]:
+attack filthbug
+*Combat Engaged*
+[HP=28]:
+You critically whap filthbug for 23 damage!
+[HP=28]:The filthbug collapses, its legs curling tightly around it.
+[HP=28]:
+You gain 12 experience.
+[HP=28]:*Combat Off*
+[HP=28]:
+A nasty giant rat creeps into the room from nowhere.
+[HP=28]:The nasty giant rat lunges at you!
+[HP=28]:
+The nasty giant rat lunges at you!
+[HP=28]:
+n
+The door is closed!
+[HP=28]:
+n
+The door is closed!
+[HP=28]:
+n
+The nasty giant rat lunges at you!
+[HP=28]:
+The door is closed!
+[HP=28]:n
+n
+The door is closed!
+[HP=28]:n
+n
+The nasty giant rat lunges at you!
+[HP=28]:
+n
+The door is closed!
+[HP=28]:n
+The door is closed!
+[HP=28]:n
+The nasty giant rat lunges at you!
+[HP=28]:The door is closed!
+[HP=28]:n
+The door is closed!
+[HP=28]:n
+The door is closed!
+[HP=28]:n
+The nasty giant rat lunges at you!
+[HP=28]:
+The door is closed!
+[HP=28]:n
+The door is closed!
+[HP=28]:n
+The nasty giant rat lunges at you!
+[HP=28]:
+The door is closed!
+[HP=28]:n
+The door is closed!
+[HP=28]:n
+The nasty giant rat lunges at you!
+[HP=28]:The door is closed!
+[HP=28]:n
+The door is closed!
+[HP=28]:n
+The door is closed!
+[HP=28]:n
+The nasty giant rat lunges at you!
+[HP=28]:
+The door is closed!
+[HP=28]:n
+The door is closed!
+[HP=28]:n
+The nasty giant rat lunges at you!
+[HP=28]:
+The door is closed!
+[HP=28]:n
+The door is closed!
+[HP=28]:n

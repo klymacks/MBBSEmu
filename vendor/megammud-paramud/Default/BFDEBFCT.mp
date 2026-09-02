@@ -1,0 +1,11 @@
+[][Winterhawk]
+[BFDE:Tagesh Highlands:Bristlewood Forest, Dead End-14 3456]
+[BFCT:Tagesh Highlands:Bristlewood Forest, Carved Tree-14 3449]
+AAF00010:25D00104:7:-1:0:::
+AAF00010:0000:E
+B2401040:0000:SE
+B2400410:0000:E
+B2401040:0000:SE
+B2400500:0000:NE
+B2404100:0000:NE
+B2404001:0000:N

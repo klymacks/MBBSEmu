@@ -1,0 +1,10 @@
+[][Winterhawk]
+[SMTH:Khazarad:Master Smith Martok]
+[KMIN:Khazarad:Miner's Guild]
+8FC00055:0FE00050:6:-1:0:::
+8FC00055:0000:n
+8FC10004:0000:u
+88A40001:0000:n
+D1D00054:0000:e
+D1D00050:0000:e
+59E00054:0000:e

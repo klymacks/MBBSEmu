@@ -1,0 +1,11 @@
+[][Winterhawk]
+[NINT:Trainers:Ninja Trainer]
+[STBS:Sewers:Sewer Tunnel, Brass street]
+73810010:E9510005:7:-1:0:::
+73810010:0000:e
+5C900049:0000:n
+5C980044:0000:d
+84420001:0000:n
+84400025:0000:e
+E95000A5:0000:s
+E9500005:0000:s

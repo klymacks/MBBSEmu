@@ -1,0 +1,10 @@
+[][Winterhawk]
+[BHKE:Brynhall:Abandoned Keep, Entrance-14 5009]
+[AKUC:Brynhall:Abandoned Keep, Upper Corner-14 5003]
+CC100059:13F40022:6:-1:0:::
+CC100059:0000:s
+4C20005A:0000:w
+7DC00050:0000:w
+7DC00090:0000:w
+7DC00090:0000:w
+14910022:0000:u

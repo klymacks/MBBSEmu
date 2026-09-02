@@ -1,0 +1,14 @@
+[][Winterhawk]
+[MAUE:Blackwood Forest:Mausoleum, Entrance]
+[M1SE:Blackwood Forest:Mausoleum, Level 1 South End]
+7F010081:BE500001:10:-1:0:::
+7F010081:0000:w
+0D900420:0000:nw
+0D901400:0000:nw
+0D901104:0000:s
+0D900005:0000:s
+0D901005:0000:se
+0D901402:0000:se
+0D901402:0000:se
+0D90550A:0000:s
+58C00006:0000:s

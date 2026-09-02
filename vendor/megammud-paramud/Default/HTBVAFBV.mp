@@ -1,0 +1,14 @@
+[][Winterhawk]
+[HTBV:Ancient Fortress:Burning Valley (Hell)-17 2944]
+[AFBV:Ancient Fortress:Burning Valley, Dead End-17 2959]
+8EF00004:3F410010:10:-1:0:::
+8EF00004:0000:S
+8EF00011:0000:E
+8EF00040:0000:S[move boulder]
+8EF00010:0000:E
+8EF00044:0000:S
+8EF00001:0000:E[move boulder]
+8EF00011:0000:N
+8EF00004:0000:N[move boulder]
+8EF00001:0000:N
+8EF00044:0000:W

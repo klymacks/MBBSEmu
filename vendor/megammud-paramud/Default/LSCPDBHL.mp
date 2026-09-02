@@ -1,0 +1,9 @@
+[][Winterhawk]
+[LSCP:Baenglen:Lanford Stead, Cart Path-14 5759]
+[DBHL:Baenglen:Disused Barn, Hay Loft-14 5770]
+70800005:5F940000:5:-1:0:::
+70800005:0000:n
+70800055:0000:w
+70800052:0000:n
+CC600009:0000:n
+CC610004:0000:u

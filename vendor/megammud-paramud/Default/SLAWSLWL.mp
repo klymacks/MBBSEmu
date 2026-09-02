@@ -1,0 +1,10 @@
+[][Winterhawk]
+[SLAW:Slums:Abandoned Warehouse, Entrance]
+[SLWL:Slums:Mercenary Captain]
+2F200059:9CD00055:6:-1:0:::
+2F200059:0000:n
+B5700055:0000:n
+B5700054:0000:e
+A1210044:0000:u
+9FE40044:0000:w
+83B00054:0000:s

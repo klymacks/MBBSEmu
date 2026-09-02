@@ -1,0 +1,13 @@
+[][Winterhhawk]
+[CTNS:Scorching Desert:Crumbling Temple, North Stair]
+[CSDE:Scorching Desert:Crumbling Temple, Carved Shaft]
+41D11000:26300400:9:-1:0:::
+41D11000:0000:SE
+41D00404:0000:S
+45101041:0000:W
+4B300054:0000:W
+4B304010:0000:SW
+4B300140:0000:W
+4B300050:0000:W
+4B304010:0000:SW
+4B305100:0000:turn torch

@@ -1,0 +1,11 @@
+[][Winterehawk]
+[GHBR:Gang Houses:Entrance Brass House Room]
+[KENT:Khazarad:Khazarad, Entry Arch]
+6FA00019:A6E00055:7:-1:0:::
+6FA00019:0000:n
+51B00054:0000:w
+51B00050:0000:w
+51B00052:0000:w
+D1E00011:0000:n
+1AA00005:0000:n
+1AA00005:0000:n

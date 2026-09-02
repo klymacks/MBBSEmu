@@ -1,0 +1,9 @@
+[][Winterhhawk]
+[DEPR:Dark-Elf City:Dark-elf Prison]
+[SLEZ:Dark-Elf City:Sleazy Shopkeeper]
+43915000:A1400020:5:-1:0:::
+43915000:0000:U
+ED740020:0000:E
+86400085:0000:N
+78000055:0000:N
+86400085:0000:W

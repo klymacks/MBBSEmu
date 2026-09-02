@@ -1,0 +1,13 @@
+[][Winterhawk]
+[BIIR:Rocky Trail:White Dragon Instant Regen Room]
+[BICT:Rocky Trail:Black Ice Cavern, Dragon Fork]
+DD504010:04100504:9:-1:0:::
+DD504010:0000:e
+DD500140:0000:ne
+DD504400:0000:nw
+DD501040:0000:w
+DD500011:0000:n
+DD500404:0000:nw
+DD501100:0000:ne
+DD504010:0000:e
+DD501040:0000:se

@@ -1,0 +1,12 @@
+[][Winterhawk]
+[LALP:Tagesh Highlands:Lakeside Path-14 4312]
+[AHCM:Tagesh Highlands:Alba Hollow, Cave Mouth-14 4460]
+19F05001:26504140:8:-1:0:::
+19F05001:0000:se
+19F01400:0000:se
+19F00410:0000:e
+19F01040:0000:se
+19F00404:0000:s
+19F01001:0000:se
+19F00404:0000:s
+69B04001:0000:sw

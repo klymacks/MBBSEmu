@@ -1,0 +1,11 @@
+[][Winterhawk]
+[SMCE:Shad - Fungal Forest:Smoldering Tunnels, Cav. Entrance-5 4603]
+[FGCH:Shad - Fungal Forest:Fire Giant Chieftain-5 4638]
+A1300045:8E900001:7:-1:0:::
+A1300045:0000:S
+B0401045:0000:S
+B0400055:0000:S
+B0400055:0000:S
+B0400055:0000:S
+B0400145:0000:S
+B0400405:0000:S

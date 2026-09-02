@@ -1,0 +1,10 @@
+[][Winterhawk]
+[RPAC:Rugged Plateau:Atop the Crag]
+[RPGF:Rugged Plateau:Rugged Plateau, Dire Grizzly Fork]
+FF940001:85F01140:6:-1:0:::
+FF940001:0000:D
+3CD11000:0000:SE
+85F04410:0000:SW
+85F00504:0000:S
+85F04001:0000:SW
+85F04100:0000:SW

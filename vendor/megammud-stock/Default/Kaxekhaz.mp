@@ -1,0 +1,9 @@
+[][]
+[KAXE:Khazarad:Axe of Fury Weapon Store-6 1336]
+[KHAZ:Khazarad:Khazarad Center-6 1257]
+F1E00004:19800051:5:-1:0:::
+F1E00004:0000:s
+3B900055:0000:e
+3B900052:0000:e
+19800045:0000:n
+19800014:0000:e

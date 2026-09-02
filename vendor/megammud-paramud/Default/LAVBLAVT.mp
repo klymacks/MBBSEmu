@@ -1,0 +1,19 @@
+[][]
+[LAVB:Lava Fields:Outside Boulder]
+[LAVT:Lava Fields:Lava Tube (Red Dragons)]
+8E404500:05C00050:15:-1:0:magma amulet:LAVBLAVT.MP:
+8E404500:0000:@party equip magma amulet
+8E404500:0000:@party equip phoenix feather
+8E404500:0044:sw
+0C100104:0044:s
+B2D00005:0044:push boulder
+B2D00005:0044:n
+0C100104:0044:ne
+8E404500:0000:ne
+9FD04410:0000:e
+9FD01044:0000:se
+9FD00410:0000:e
+9FD01040:0000:se
+9FD00444:0000:s
+9FD00005:0000:e[]
+CAC00010:0001:e

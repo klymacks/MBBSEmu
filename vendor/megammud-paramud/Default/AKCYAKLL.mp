@@ -1,0 +1,10 @@
+[][Winterhawk]
+[AKCY:Tagesh Highlands:Alba Keep, Courtyard-14 7201]
+[AKLL:Tagesh Highlands:Lord Lachlan]
+F5400056:2F000001:6:-1:0:::
+F5400056:0000:s
+F5400065:0000:s
+F5400049:0000:s
+EEC00056:0000:s
+3E600055:0000:s
+3E600055:0000:s

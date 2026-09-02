@@ -1,0 +1,13 @@
+[][Winterhawk]
+[KPB1:Kingsport:Bobbin and Weaving Clothiers, Front Room]
+[KPHS:Kingsport:Harbor Square]
+A5300005:36600055:9:-1:0:::
+A5300005:0000:s
+65500051:0000:e
+65500050:0000:e
+CA800051:0000:n
+8D900085:0000:n
+8D900085:0000:n
+8D900045:0000:n
+8D900005:0000:n
+8D900005:0000:n

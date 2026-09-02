@@ -1,0 +1,12 @@
+[][Winterhawk]
+[DFFP:Darkwood Forest:Darkwood Forest (first path)]
+[DFMR:Darkwood Forest:Darkwood Forest, Main Road (Sign)]
+F4E04000:02300055:8:-1:0:::
+F4E04000:0000:go path
+A2C01040:0000:W
+A2C00410:0000:NW
+55701400:0000:NW
+02301040:0000:W
+02300050:0000:W
+02300410:0000:NW
+02301040:0000:W

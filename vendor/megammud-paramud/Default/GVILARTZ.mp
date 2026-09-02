@@ -1,0 +1,11 @@
+[][Winterhawk]
+[GVIL:Gnome Village:Gnome Village- 6 552]
+[ARTZ:Gnome Village:Arden the Zealous]
+2A300145:2E500008:7:-1:0:::
+2A300145:0000:ne
+2A304014:0000:e
+2A300051:0000:e
+2A300055:0000:n
+2A300005:0000:n
+2A300005:0000:n
+2A300056:0000:n

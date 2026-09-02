@@ -1,0 +1,12 @@
+[][Winterhawk]
+[BFDE:Tagesh Highlands:Bristlewood Forest, Dead End-14 3456]
+[SCVV:Tagesh Highlands:Small Cabin, Vectus Vynne-14 3569]
+AAF00010:7FF00004:8:-1:0:::
+AAF00010:0000:N
+F0C00001:0000:N
+F0C00104:0000:NE
+F0C04100:0000:NE
+F0C04010:0000:go trail
+DBE00200:0000:NE
+2D518000:0000:U
+30145555:0000:N

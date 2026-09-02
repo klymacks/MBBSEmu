@@ -3,7 +3,7 @@ from __future__ import annotations
 import tempfile
 from pathlib import Path
 
-from .realm_map import Atlas, NEWHAVEN, room_key
+from .realm_map import Atlas, NEWHAVEN, SILVERMERE, room_key
 
 
 def test_seed_has_newhaven() -> None:
@@ -19,6 +19,12 @@ def test_seed_has_newhaven() -> None:
     ]
     assert atlas.path("Newhaven, Arena", "Newhaven, Guild") == ["u", "n"]
     assert atlas.path("Newhaven, Narrow Road", "Newhaven, Guild") == ["n"]
+    assert atlas.path("Newhaven, Village Entrance", "Newhaven, Docks") == ["se", "s"]
+    assert atlas.path("Pier", "Newhaven, Docks") == ["borrow skiff"]
+    assert atlas.way_home("Town Square") == ["go manhole"]
+    assert atlas.way_home("Newhaven, Village Entrance") == ["w", "w", "d"]
+    assert atlas.known("Town Square")
+    assert atlas.room_count() >= len(NEWHAVEN) + len(SILVERMERE)
 
 
 def test_record_edge_bfs() -> None:

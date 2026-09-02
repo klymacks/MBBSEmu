@@ -1,0 +1,8 @@
+[][]
+[MEIA:Silvermere:Curio Shop (Meia)-1 332]
+[STSQ:Silvermere:Town Square-1 224]
+4DE00005:9D400055:4:-1:0:::
+4DE00005:0000:s
+3DD00055:0000:w
+3DD00050:0000:w
+DEC00055:0000:w

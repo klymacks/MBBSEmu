@@ -1,0 +1,14 @@
+[][Winterhawk]
+[TFTP:Terra Fuego:Rugged Shoreline, Tidepool]
+[TFBE:Terra Fuego:Shoreline, Sandy Beach {east}]
+43705555:8D405110:10:-1:0:::
+43705555:0000:nw
+57201115:0000:n
+57200114:0000:ne
+57204111:0000:n
+57200115:0000:n
+57200415:0000:nw
+8D401111:0000:n
+8D400115:0000:n
+8D400115:0000:n
+8D400415:0000:nw

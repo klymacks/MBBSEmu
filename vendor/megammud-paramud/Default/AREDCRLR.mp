@@ -1,0 +1,13 @@
+[][Winterhawk]
+[ARED:Crownlands:Upper Albion River, Eastern Dock-14 2575]
+[CRLR:Crownlands:Crownlands, Lowland Road]
+BA500050:C9600085:9:-1:0:::
+BA500050:0000:e
+1ED10040:0000:u
+1ED40001:0000:n
+1ED00024:0000:e
+D6900085:0000:s
+B9E00011:0000:e
+B9E00050:0000:e
+B9E00041:0000:n
+C4100065:0000:e

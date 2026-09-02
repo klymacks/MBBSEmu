@@ -1,0 +1,14 @@
+[][Winterhawk]
+[TIME:Trainers:Ethereal Prison (Timelord) (41-54)1 1041]
+[NPPV:Negative Power Plane:Negative Power Plane Vortex-8 978]
+F0540000:DD055500:10:-1:0:::
+F0540000:0000:d
+DCF04100:0000:sw
+DCF55500:0000:nw
+DCF01400:0000:nw
+DCF55500:0000:nw
+DCF01400:0000:nw
+DCF55500:0000:nw
+DCF01400:0000:nw
+DCF55500:0000:ne
+DCF04100:0000:ne

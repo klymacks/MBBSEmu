@@ -1,0 +1,7 @@
+[][Spork ZSpoon]
+[ARGS:Arlysia:The Goode Seamstress-17 2440]
+[ARTA:Arlysia:Tavern-17 2441]
+32400001:8DA00005:3:-1:0:::
+32400001:0000:n
+9C000055:0000:w
+9C000055:0000:n

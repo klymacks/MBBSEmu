@@ -1,0 +1,12 @@
+[][Winterhawk]
+[TSSP:Tal'kiran:Tal'kiran Shore, Stone Pier-14 15000]
+[TOAS:Tal'kiran:Top of the Ancient Stair-13 12453]
+59D00010:DD941115:8:-1:0:::
+59D00010:0000:e
+59D00050:0000:e
+59D01150:0000:e
+6A800055:0000:e
+D6D10040:0000:u
+D6D40010:0000:e
+D6D00050:0000:e
+D6D10040:0000:u

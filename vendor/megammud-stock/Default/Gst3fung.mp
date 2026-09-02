@@ -1,0 +1,8 @@
+[][]
+[GST3:Black House:Grand Stair (Gate)-7 150]
+[FUNG:Black House:Fungus Forest-7 156]
+90806000:23600015:4:-1:0::GST2GST3.MP:
+90806000:0000:se[]
+90804800:0000:sw
+BAB00104:0000:s
+E7E00005:0000:s
