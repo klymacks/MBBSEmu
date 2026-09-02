@@ -3,7 +3,10 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENDOR="$ROOT/vendor/mbbsemu"
-EMULATOR="$VENDOR/MBBSEmu"
+EMULATOR="$ROOT/MBBSEmu/bin/Release/net10.0/MBBSEmu"
+if [[ ! -x "$EMULATOR" ]]; then
+  EMULATOR="$VENDOR/MBBSEmu"
+fi
 MODULE_DIR="$ROOT/modules/WCCMMUD"
 DATA_DIR="$ROOT/data"
 CONFIG_DIR="$ROOT/config"

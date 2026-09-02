@@ -359,3 +359,6 @@ MigrationBackup/
 docker/config/
 docker/config-test-*/
 docker/docker-compose.test.yml
+
+# Finn's Realm packaged deployment (local module files + self-contained emu)
+/dist/

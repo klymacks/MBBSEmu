@@ -13,6 +13,7 @@ from .paths import (
     is_weapon_shop,
     leave_dead_end,
     lop_in,
+    occupants_in,
     players_in,
     is_trainer,
     step_toward_arena,
@@ -61,6 +62,10 @@ def test_prompt_and_room() -> None:
     assert lop_in(["klymacks", "nasty acid slime"]) == "acid slime"
     assert players_in(["klymacks", "a filthbug"]) == ["klymacks"]
     assert lop_in(["klymacks"]) is None
+    assert occupants_in(["Corwyn", "acid slime"]) == ["Corwyn"]
+    assert occupants_in(["Coorwyn", "acid slime"]) == ["Coorwyn"]
+    assert occupants_in(["acid slime"]) == []
+    assert "Coorwyn" in occupants_in(["slimeCoorwyn"])
     glued_here = parse_line("Also here: giant rat Klymacks.")
     assert glued_here and glued_here["kind"] == "also_here"
     assert glued_here["mobs"] == ["giant rat", "Klymacks"]

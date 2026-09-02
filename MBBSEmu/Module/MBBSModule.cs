@@ -192,6 +192,7 @@ namespace MBBSEmu.Module
                 Mdf = new MdfFile(fullMdfFilePath);
 
                 LoadModuleDll(Mdf.DLLFiles[0].Trim());
+                LoadNeedsMeCompanions();
 
                 if (Mdf.MSGFiles.Count > 0)
                 {
@@ -359,13 +360,53 @@ namespace MBBSEmu.Module
 
             _logger.Info($"Loaded {dllToLoad}");
 
-            //Pull records from ModuleReferenceTable that aren't of References handled internally by the emulator
-            foreach (var import in ModuleDlls[0].File.ModuleReferenceTable
+            //Pull records from this DLL's ModuleReferenceTable that aren't of References handled internally by the emulator
+            foreach (var import in requiredDll.File.ModuleReferenceTable
                 .Where(x => GetAllExportedModules().All(e => e != x.Name)).Select(x => x.Name))
             {
                 //Only load a dependency if it's not already loaded by a previous library
                 if (ModuleDlls.All(x => x.File.FileName.ToUpper().Split('.')[0] != import.ToUpper()))
                     LoadModuleDll(import);
+            }
+        }
+
+        /// <summary>
+        ///     Loads Internal add-on DLLs declared in the MDF "Needs Me" line (e.g. WCCMMPLS
+        ///     for MajorMUD) into this module's address space, plus their MSG files.
+        /// </summary>
+        private void LoadNeedsMeCompanions()
+        {
+            if (Mdf.NeedsMe == null || Mdf.NeedsMe.Count == 0)
+                return;
+
+            foreach (var companion in Mdf.NeedsMe)
+            {
+                var alreadyLoaded = ModuleDlls.Any(x =>
+                    x.File.FileName.ToUpper().Split('.')[0] == companion.ToUpper());
+                if (alreadyLoaded)
+                    continue;
+
+                var companionDll = _fileUtility.FindFile(ModulePath, $"{companion}.DLL");
+                if (!File.Exists(Path.Combine(ModulePath, companionDll)))
+                {
+                    _logger.Warn($"({ModuleIdentifier}) Needs Me companion {companion} not found, skipping");
+                    continue;
+                }
+
+                LoadModuleDll(companion);
+
+                var companionMdfName = _fileUtility.FindFile(ModulePath, $"{companion}.MDF");
+                var companionMdfPath = Path.Combine(ModulePath, companionMdfName);
+                if (!File.Exists(companionMdfPath))
+                    continue;
+
+                var companionMdf = new MdfFile(companionMdfPath);
+                foreach (var msg in companionMdf.MSGFiles)
+                {
+                    if (Mdf.MSGFiles.Any(existing => existing.Equals(msg, StringComparison.OrdinalIgnoreCase)))
+                        continue;
+                    Mdf.MSGFiles.Add(msg);
+                }
             }
         }
 

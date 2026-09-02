@@ -40,12 +40,20 @@ namespace MBBSEmu.Module
         /// </summary>
         public List<string> Requires { get; set; }
 
+        /// <summary>
+        ///     Internal add-on modules that attach to this one (MDF "Needs Me").
+        ///     Example: MajorMUD lists WCCMMPLS so Plus loads in the same address space
+        ///     without becoming its own menu item.
+        /// </summary>
+        public List<string> NeedsMe { get; set; }
+
         public List<string> Cleanup { get; set; }
         public List<string> BBSUp { get; set; }
 
         public MdfFile(string mdfFile)
         {
             MSGFiles = new List<string>();
+            NeedsMe = new List<string>();
             _mdfFile = mdfFile;
             Parse();
         }
@@ -56,6 +64,7 @@ namespace MBBSEmu.Module
             Developer = "test";
             DLLFiles = new List<string>();
             MSGFiles = new List<string>();
+            NeedsMe = new List<string>();
         }
 
         public static MdfFile createForTest()
@@ -85,6 +94,9 @@ namespace MBBSEmu.Module
                         break;
                     case "REQUIRES":
                         Requires = keyValuePair[1].Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
+                        break;
+                    case "NEEDS ME":
+                        NeedsMe = keyValuePair[1].Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).ToList();
                         break;
                     case "CLEANUP":
                         var value = keyValuePair[1].Trim();

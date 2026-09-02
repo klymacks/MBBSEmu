@@ -12,6 +12,7 @@ from .paths import (
     attack_name,
     coins_in,
     lop_in,
+    occupants_in,
     peel_presence,
 )
 from .realm_map import Atlas
@@ -45,7 +46,7 @@ def test_lawful_does_not_attack_players() -> None:
     state.mobs = ["klymacks", "nasty acid slime"]
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack acid slime"]
+    assert sent == ["att acid slime"]
     assert not b.bail
     assert b.mode == "hunt"
     assert "klymacks" not in " ".join(sent)
@@ -70,7 +71,7 @@ def test_switches_off_dead_filthbug_to_kobold() -> None:
     state.last_kill = "The filthbug"
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack kobold thief"]
+    assert sent == ["att kobold thief"]
     assert not b.bail
 
 
@@ -111,7 +112,7 @@ def test_sysop_hunts_past_matt() -> None:
     b.tick(state, sent.append, pending=False)
     assert not b.bail
     assert b.mode == "hunt"
-    assert sent[-1] in ("attack acid slime", "attack lashworm")
+    assert sent[-1] in ("att acid slime", "att lashworm")
     assert "quit" not in sent
     assert "matt" not in " ".join(sent).lower()
 
@@ -157,7 +158,7 @@ def test_lashworm_is_not_a_player() -> None:
     state.apply({"kind": "arrive", "name": "nasty lashworm"})
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack lashworm"]
+    assert sent == ["att lashworm"]
     assert not b.bail
 
 
@@ -182,7 +183,7 @@ def test_named_lunge_is_not_pvp() -> None:
     )
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack kobold thief"]
+    assert sent == ["att kobold thief"]
     assert not b.bail
     assert b.mode == "hunt"
 
@@ -203,7 +204,7 @@ def test_lawful_bails_on_stranger() -> None:
     state.mobs = ["Aelthas", "nasty acid slime"]
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack acid slime"]
+    assert sent == ["att acid slime"]
     assert not b.bail
 
 
@@ -238,7 +239,7 @@ The nasty lashworm lunges at you!
             state.apply(ev)
         sent: list[str] = []
         b.tick(state, sent.append, pending=False)
-        assert sent == ["attack lashworm"]
+        assert sent == ["att lashworm"]
         assert not b.bail
         assert b.mode == "hunt"
         assert b.next_action != "logoff"
@@ -280,13 +281,13 @@ def test_matt_does_not_attack_klymacks_on_the_rat() -> None:
     state.apply({"kind": "also_here", "mobs": ["giant rat Klymacks"]})
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack giant rat"]
+    assert sent == ["att giant rat"]
     assert not b.bail
     assert "klymacks" not in " ".join(sent).lower()
     state.apply({"kind": "also_here", "mobs": ["d slimeKlymacks"]})
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack slime"
+    assert sent[-1] == "att slime"
     assert "klymacks" not in sent[-1].lower()
 
 
@@ -331,20 +332,20 @@ def test_matt_peels_exit_off_attack() -> None:
         state.apply(ev)
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack rat"
-    assert sent[-1] != "attack d rat"
+    assert sent[-1] == "aa rat"
+    assert sent[-1] != "aa d rat"
     state.apply({"kind": "also_here", "mobs": ["d giant rat"]})
     state.prompt_seq += 1
     b._attacking = ""
     state.in_combat = False
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack giant rat"
+    assert sent[-1] == "aa giant rat"
     state.mobs = ["d rat"]
     state.prompt_seq += 1
     b._attacking = ""
     state.in_combat = False
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack rat"
+    assert sent[-1] == "aa rat"
 
 
 def test_paladin_heals_and_saves_harm() -> None:
@@ -376,7 +377,7 @@ def test_paladin_heals_and_saves_harm() -> None:
     state.mobs = ["giant rat", "giant rat"]
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack giant rat"
+    assert sent[-1] == "aa giant rat"
     b._cast_at = time.monotonic() - 9
     n = len(sent)
     state.prompt_seq += 1
@@ -426,7 +427,7 @@ def test_paladin_heals_and_saves_harm() -> None:
     b._cast_at = 0.0
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack ogre"
+    assert sent[-1] == "aa ogre"
     assert "harm" not in sent[-1]
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
@@ -660,7 +661,7 @@ def test_second_slime_after_kill_is_live() -> None:
     assert lop_in(state.mobs)
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack acid slime"
+    assert sent[-1] == "aa acid slime"
     assert "cast bless" not in sent
     assert "large" not in sent[-1]
 
@@ -671,7 +672,7 @@ def test_ooze_arrive_engages_acid_slime() -> None:
     state.apply(parse_line("A acid slime oozes into the room from nowhere."))
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack acid slime"]
+    assert sent == ["aa acid slime"]
 
 
 def test_klymacks_never_casts() -> None:
@@ -737,7 +738,7 @@ def test_matt_heals_klymacks_after_hit() -> None:
     b.tick(state, sent.append, pending=False)
     assert sent == ["cast minor healing klymacks"]
     assert "attack" not in " ".join(sent).lower()
-    assert "klymacks" not in [c.lower() for c in sent if c.startswith("attack")]
+    assert "klymacks" not in [c.lower() for c in sent if c.startswith(("att ", "aa ", "attack ", "bs "))]
 
 
 def test_matt_self_heals_before_klymacks() -> None:
@@ -868,7 +869,7 @@ def test_matt_skips_party_heal_on_small_hit() -> None:
     b.tick(state, sent.append, pending=False)
     assert sent
     assert all("cast" not in c for c in sent)
-    assert sent[-1] == "attack giant rat"
+    assert sent[-1] == "aa giant rat"
 
 
 def test_matt_party_heals_after_chips() -> None:
@@ -934,7 +935,7 @@ def test_matt_skips_heal_when_max_unknown() -> None:
     b.tick(state, sent.append, pending=False)
     assert sent
     assert all("cast" not in c for c in sent)
-    assert sent[-1] == "attack giant rat"
+    assert sent[-1] == "aa giant rat"
 
 
 def test_matt_heals_at_80_percent_not_above() -> None:
@@ -979,7 +980,7 @@ def test_matt_heals_at_80_percent_not_above() -> None:
     b.tick(state, sent.append, pending=False)
     assert sent
     assert all("cast" not in c for c in sent)
-    assert sent[-1] == "attack giant rat"
+    assert sent[-1] == "aa giant rat"
 
 
 def test_klymacks_asks_heal_once_when_following() -> None:
@@ -1018,7 +1019,7 @@ def test_klymacks_asks_heal_once_when_following() -> None:
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
     assert sent.count(HEAL_ASK) == 1
-    assert sent[-1] == "attack giant rat"
+    assert sent[-1] == "att giant rat"
 
     state.hp = 76
     state.prompt_seq += 1
@@ -1097,7 +1098,7 @@ def test_matt_heals_on_heal_me() -> None:
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
     assert sent.count("cast minor healing klymacks") == 1
-    assert sent[-1] == "attack giant rat"
+    assert sent[-1] == "aa giant rat"
 
 
 def test_matt_still_heals_on_old_say_heal() -> None:
@@ -1166,7 +1167,7 @@ def test_klymacks_never_heals_party() -> None:
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
     assert "cast" not in " ".join(sent)
-    assert all("klymacks" not in c.lower() or not c.startswith("attack") for c in sent)
+    assert all("klymacks" not in c.lower() or not c.startswith(("att ", "aa ", "attack ", "bs ")) for c in sent)
 
 
 def test_matt_does_not_heal_klymacks_after_leave() -> None:
@@ -1202,7 +1203,7 @@ def test_matt_does_not_heal_klymacks_after_leave() -> None:
     assert sent
     assert "cast minor healing" not in sent[0]
     assert "klymacks" not in sent[-1].lower()
-    assert sent[-1] == "attack giant rat"
+    assert sent[-1] == "aa giant rat"
 
 
 def test_matt_does_not_heal_or_attack_klymacks_corpse() -> None:
@@ -1267,7 +1268,7 @@ def test_harm_still_living_only_with_klymacks_here() -> None:
     state.mobs = ["Klymacks", "nasty lashworm", "giant rat"]
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] in ("attack lashworm", "attack giant rat")
+    assert sent[-1] in ("aa lashworm", "aa giant rat")
     assert "klymacks" not in sent[-1].lower()
     assert "healing" not in " ".join(sent)
     n = len(sent)
@@ -1340,7 +1341,7 @@ def test_f7_following_swings() -> None:
     assert b._ranked
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack acid slime"]
+    assert sent == ["att acid slime"]
     assert "u" not in sent
     assert "d" not in sent
     assert "sn" not in sent
@@ -1355,7 +1356,7 @@ def test_follow_f7_also_here_lashworm_engages() -> None:
     state.apply({"kind": "also_here", "mobs": ["Matt", "nasty lashworm"]})
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack lashworm"]
+    assert sent == ["att lashworm"]
     assert "u" not in sent
     assert "d" not in sent
     assert "sn" not in sent
@@ -1398,7 +1399,7 @@ def test_empty_scanned_room_no_attack() -> None:
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
     assert sent == ["sn"]
-    assert not any(c.startswith("attack") or c.startswith("bs ") for c in sent)
+    assert not any(c.startswith(("att ", "aa ", "attack ")) or c.startswith("bs ") for c in sent)
 
 
 def test_sneak_try_no_fail_assumes_hidden() -> None:
@@ -1465,15 +1466,15 @@ def test_matt_peels_attack_tack() -> None:
     state.mobs = ["tack giant rat"]
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack giant rat"]
-    assert sent[-1] != "attack tack giant rat"
+    assert sent == ["aa giant rat"]
+    assert sent[-1] != "aa tack giant rat"
     b._attacking = ""
     state.in_combat = False
     state.mobs = ["attack giant rat"]
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack giant rat"
-    assert sent[-1] != "attack tack giant rat"
+    assert sent[-1] == "aa giant rat"
+    assert sent[-1] != "aa tack giant rat"
     assert sent[-1].split()[1:] != ["tack", "giant", "rat"]
 
 
@@ -1491,8 +1492,8 @@ def test_klymacks_peels_attack_tack() -> None:
     assert attack_name("nasty acid slime") == "acid slime"
     assert attack_name("acid slime") == "acid slime"
     assert attack_name("id slime") == "acid slime"
-    assert attack_line("acid slime") == "attack acid slime"
-    assert attack_line("giant rat") == "attack giant rat"
+    assert attack_line("acid slime") == "att acid slime"
+    assert attack_line("giant rat") == "att giant rat"
     assert attack_line("acid slime") != "k acid slime"
     assert attack_line("acid slime") != "a id slime"
     assert attack_line("acid slime") != "at acid slime"
@@ -1501,7 +1502,7 @@ def test_klymacks_peels_attack_tack() -> None:
     state.mobs = ["Matt", "tack giant rat"]
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack giant rat"]
+    assert sent == ["att giant rat"]
     assert "tack" not in sent[-1].split()
     assert sent[-1].split()[1:] != ["tack", "giant", "rat"]
     b._attacking = ""
@@ -1509,21 +1510,21 @@ def test_klymacks_peels_attack_tack() -> None:
     state.mobs = ["Matt", "fat carrion beast"]
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack carrion beast"
+    assert sent[-1] == "att carrion beast"
     assert "fat" not in sent[-1]
     b._attacking = ""
     state.in_combat = False
     state.mobs = ["Matt", "thin giant rat"]
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack giant rat"
+    assert sent[-1] == "att giant rat"
     assert "thin" not in sent[-1]
     b._attacking = ""
     state.in_combat = False
     state.mobs = ["Matt", "nasty lashworm"]
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack lashworm"
+    assert sent[-1] == "att lashworm"
     assert "nasty" not in sent[-1]
     hidden, hid = _following_klymacks(hidden=True)
     hidden.mode = "hunt"
@@ -1577,7 +1578,7 @@ def test_no_ghost_lashworm_after_leave() -> None:
     state.scanned = True
     state.mobs = []
     b.tick(state, sent.append, pending=False)
-    assert not any("lashworm" in c for c in sent if c.startswith("attack"))
+    assert not any("lashworm" in c for c in sent if c.startswith(("att ", "aa ", "attack ", "bs ")))
 
 
 def test_falls_dead_combat_off_no_ghost_swing() -> None:
@@ -1603,8 +1604,8 @@ def test_falls_dead_combat_off_no_ghost_swing() -> None:
     assert state.in_combat is False
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert not any("lashworm" in c for c in sent if c.startswith("attack"))
-    assert "attack lashworm" not in sent
+    assert not any("lashworm" in c for c in sent if c.startswith(("att ", "aa ", "attack ", "bs ")))
+    assert "aa lashworm" not in sent
 
 
 def test_rat_dies_beast_snaps_swings_beast() -> None:
@@ -1630,7 +1631,7 @@ def test_rat_dies_beast_snaps_swings_beast() -> None:
     assert any("carrion" in m.lower() for m in state.mobs)
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack carrion beast"]
+    assert sent == ["att carrion beast"]
     assert not any("rat" in c for c in sent)
 
 
@@ -1659,7 +1660,7 @@ def test_pending_rat_swing_dropped_after_kill() -> None:
     sent: list[str] = []
     b.tick(state, sent.append, True, lambda: cancelled.append(True))
     assert cancelled
-    assert sent == ["attack carrion beast"]
+    assert sent == ["att carrion beast"]
     assert not any("rat" in c for c in sent)
 
 
@@ -1697,7 +1698,7 @@ def test_say_whiff_does_not_retry_gone_name() -> None:
     state.apply({"kind": "said", "aimed": "lashworm"})
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert "attack lashworm" not in sent
+    assert "aa lashworm" not in sent
     assert b._attacking == ""
 
 
@@ -1713,7 +1714,7 @@ def test_combat_off_arrive_lashworm_not_ghost_slime() -> None:
     state.apply({"kind": "arrive", "name": "large lashworm"})
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack lashworm"]
+    assert sent == ["att lashworm"]
     assert "slime" not in " ".join(sent)
     assert "large" not in sent[-1]
 
@@ -1730,7 +1731,7 @@ def test_say_whiff_slime_then_attack_lashworm() -> None:
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
     assert "slime" not in " ".join(sent)
-    assert sent[-1] == "attack lashworm"
+    assert sent[-1] == "att lashworm"
 
 
 def test_say_a_carrion_beast_then_attack_live() -> None:
@@ -1755,7 +1756,7 @@ def test_say_a_carrion_beast_then_attack_live() -> None:
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
     assert "carrion" not in " ".join(sent)
-    assert sent[-1] == "attack kobold thief"
+    assert sent[-1] == "aa kobold thief"
 
 
 def test_matt_strike_peels_size_adjectives() -> None:
@@ -1768,13 +1769,13 @@ def test_matt_strike_peels_size_adjectives() -> None:
     state.mobs = ["large lashworm"]
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack lashworm"]
+    assert sent == ["aa lashworm"]
     state.mobs = ["small giant rat"]
     state.in_combat = False
     b._attacking = ""
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack giant rat"
+    assert sent[-1] == "aa giant rat"
     assert "small" not in sent[-1]
     assert "large" not in " ".join(sent)
 
@@ -1825,7 +1826,7 @@ def test_klymacks_follows_matt() -> None:
     state.mobs = ["Matt", "acid slime"]
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack acid slime"
+    assert sent[-1] == "att acid slime"
     assert "bs " not in sent[-1]
     assert not b.bail
 
@@ -1902,7 +1903,7 @@ def test_manual_join_backrank_starts_hunt() -> None:
     assert b.mode == "hunt"
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack acid slime"
+    assert sent[-1] == "att acid slime"
     assert "u" not in sent
     assert "d" not in sent
     assert "sn" not in sent
@@ -2128,7 +2129,7 @@ def test_matt_waits_for_join_before_swinging() -> None:
     state.apply({"kind": "followed", "name": "Klymacks"})
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack acid slime"
+    assert sent[-1] == "att acid slime"
 
 
 def test_matt_invites_klymacks() -> None:
@@ -2227,7 +2228,7 @@ def test_matt_invites_when_klymacks_arrives() -> None:
     state.apply({"kind": "also_here", "mobs": ["acid slime"]})
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack acid slime"]
+    assert sent == ["aa acid slime"]
     ev = parse_line("Klymacks just arrived from the north.")
     assert ev and ev["kind"] == "arrive"
     state.apply(ev)
@@ -2254,7 +2255,7 @@ def test_matt_attacks_slime_when_klymacks_absent() -> None:
     state.apply({"kind": "also_here", "mobs": ["acid slime"]})
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack acid slime"]
+    assert sent == ["aa acid slime"]
     assert "klymacks" not in " ".join(sent).lower()
     assert "invite" not in " ".join(sent)
 
@@ -2277,7 +2278,18 @@ def test_matt_aa_off_holds_swing() -> None:
     b.toggle_aa()
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack acid slime"]
+    assert sent == ["aa acid slime"]
+
+
+def test_matt_aa_bashes_not_attack() -> None:
+    """Paladin bash is `aa`. Visible swing for others is `att`."""
+    b, state = _matt_hunt()
+    assert b.aa
+    state.apply({"kind": "also_here", "mobs": ["fat kobold thief"]})
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["aa kobold thief"]
+    assert not any(c.startswith("att ") or c.startswith("attack ") for c in sent)
 
 
 def test_ninja_hunts_without_aa() -> None:
@@ -2295,7 +2307,7 @@ def test_ninja_hunts_without_aa() -> None:
     state.apply({"kind": "also_here", "mobs": ["filthbug"]})
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack filthbug"]
+    assert sent == ["att filthbug"]
 
 
 def test_klymacks_no_attack_before_follow() -> None:
@@ -2325,7 +2337,7 @@ def test_klymacks_no_attack_before_follow() -> None:
     blob = " ".join(sent).lower()
     assert "join" not in blob
     assert "matt" not in blob
-    assert sent == ["u"]
+    assert sent == ["att acid slime"]
     assert "sn" not in sent
     assert "attack" not in blob
     state.apply({"kind": "invited", "name": "Matt"})
@@ -2442,7 +2454,7 @@ def test_pvp_fights_back_if_attacked() -> None:
     state.mobs = ["Aelthas"]
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack Aelthas"]
+    assert sent == ["att Aelthas"]
     assert not b.bail
 
 
@@ -3336,7 +3348,7 @@ def test_rest_between_fights_then_break() -> None:
     state.apply({"kind": "combat", "name": "nasty kobold thief"})
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack kobold thief"
+    assert sent[-1] == "att kobold thief"
     assert "break" not in sent
 
 
@@ -3410,11 +3422,9 @@ def test_ninja_breaks_then_sneaks() -> None:
     state.mobs = ["nasty lashworm"]
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["u"]
-    assert "attack" not in sent
+    assert sent == ["att lashworm"]
+    assert "u" not in sent
     assert "sn" not in sent
-    assert not any(cmd.startswith("bs ") for cmd in sent)
-    assert "road" in state.room.lower()
 
 
 def test_ninja_sitting_hidden_backstabs() -> None:
@@ -3510,7 +3520,7 @@ def test_ninja_empty_pit_wounded_rests_then_break_sneak() -> None:
     state.mobs = ["nasty lashworm"]
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack lashworm"
+    assert sent[-1] == "att lashworm"
     assert "break" not in sent
     assert "rest" not in sent
 
@@ -3551,7 +3561,7 @@ def test_ninja_attacks_if_already_in_combat() -> None:
     state.mobs = ["nasty lashworm"]
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack lashworm"]
+    assert sent == ["att lashworm"]
 
 
 def test_ninja_attacks_when_sneak_fails() -> None:
@@ -3571,7 +3581,7 @@ def test_ninja_attacks_when_sneak_fails() -> None:
     b._last_step = "d"
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack giant rat"]
+    assert sent == ["att giant rat"]
     assert "sn" not in sent
     assert "bs " not in sent[0]
 
@@ -3597,7 +3607,7 @@ def test_ninja_sound_on_enter_attacks() -> None:
     assert state.sneak_ok and state.sneak_fail
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack giant rat"
+    assert sent[-1] == "att giant rat"
     assert "bs " not in sent[-1]
     assert not b._hidden
     assert not b._sneaking
@@ -3638,7 +3648,7 @@ def test_ninja_inout_sneaks_down_then_leaves() -> None:
     b._last_step = "d"
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack giant rat"]
+    assert sent == ["att giant rat"]
     assert "sn" not in sent
     state.apply({"kind": "killed", "name": "The giant rat"})
     state.mobs = []
@@ -3677,7 +3687,7 @@ def test_ninja_inout_no_sneaking_line_leaves() -> None:
     state.scanned = True
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack giant rat"
+    assert sent[-1] == "att giant rat"
     assert sent.count("d") == 1
     assert "bs " not in sent[-1]
 
@@ -3719,26 +3729,26 @@ def test_two_arrives_stays_then_switches_after_kill() -> None:
     sent: list[str] = []
     cancelled: list[bool] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack filthbug"]
+    assert sent == ["aa filthbug"]
     state.in_combat = True
     state.prompt_seq += 1
     state.apply({"kind": "arrive", "name": "a large rat"})
     b.tick(state, sent.append, pending=True, cancel=lambda: cancelled.append(True))
     assert cancelled == []
-    assert sent == ["attack filthbug"]
+    assert sent == ["aa filthbug"]
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack filthbug"]
+    assert sent == ["aa filthbug"]
     assert b.next_action == "fighting filthbug"
     assert b._attacking == "filthbug"
     state.mobs = ["a large rat", "a filthbug"]
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack filthbug"]
+    assert sent == ["aa filthbug"]
     assert b.next_action == "fighting filthbug"
     state.apply({"kind": "killed", "name": "The filthbug"})
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack rat"
+    assert sent[-1] == "aa rat"
     assert b._attacking == "rat"
 
 
@@ -3759,18 +3769,18 @@ def test_ninja_two_mobs_in_combat_stays_on_first() -> None:
     state.mobs = ["a filthbug"]
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack filthbug"]
+    assert sent == ["att filthbug"]
     state.prompt_seq += 1
     state.apply({"kind": "arrive", "name": "a large rat"})
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack filthbug"]
+    assert sent == ["att filthbug"]
     assert "sn" not in sent
     assert "bs " not in " ".join(sent)
     assert b.next_action == "fighting filthbug"
     state.apply({"kind": "killed", "name": "The filthbug"})
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack rat"
+    assert sent[-1] == "att rat"
     assert "sn" not in sent
     assert "bs " not in sent[-1]
 
@@ -3789,14 +3799,14 @@ def test_hunt_stays_in_fight() -> None:
     state.mobs = ["a filthbug"]
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack filthbug"]
+    assert sent == ["att filthbug"]
     state.prompt_seq += 1
     state.in_combat = True
     state.mobs = []
     state.room = "The filthbug moves to attack you!"
     b.tick(state, sent.append, pending=False)
-    assert sent[0] == "attack filthbug"
-    assert sent.count("attack filthbug") == 1
+    assert sent[0] == "att filthbug"
+    assert sent.count("att filthbug") == 1
     assert "get all" not in sent
     assert not any(c.startswith("attack ") for c in sent[1:])
 
@@ -3824,7 +3834,7 @@ def test_camp_chills_then_returns() -> None:
     state.apply({"kind": "arrive", "name": "a filthbug"})
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack filthbug"
+    assert sent[-1] == "att filthbug"
     assert "break" not in sent
     b._attacking = ""
     state.in_combat = False
@@ -3858,7 +3868,7 @@ def test_pit_off_then_rat_attacks_not_look() -> None:
     state.apply({"kind": "arrive", "name": "giant rat"})
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack giant rat"]
+    assert sent == ["att giant rat"]
     assert "look" not in sent
 
 
@@ -3883,7 +3893,7 @@ def test_kill_attacks_next_not_get_all() -> None:
     state.in_combat = True
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack giant rat"]
+    assert sent == ["att giant rat"]
     assert "get all" not in sent
 
 
@@ -3972,7 +3982,7 @@ def test_combat_off_on_road_followed_rat_attacks() -> None:
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
     assert "sn" not in sent
-    assert sent[-1] == "attack giant rat"
+    assert sent[-1] == "att giant rat"
     assert b.mode == "hunt"
 
 
@@ -4079,7 +4089,7 @@ def test_party_may_not_sneak_paste_then_rat_attacks() -> None:
     state.apply({"kind": "prompt", "hp": 22})
     n = len(sent)
     b.tick(state, sent.append, pending=False)
-    assert sent[n:] == ["attack giant rat"]
+    assert sent[n:] == ["att giant rat"]
     assert "sn" not in sent[n:]
     assert "bs " not in " ".join(sent[n:])
     for ev in parse_events("The giant rat lunges at Matt!"):
@@ -4124,7 +4134,7 @@ def test_ninja_combat_off_looks_then_attacks_not_bs_loop() -> None:
     state.apply({"kind": "also_here", "mobs": ["Matt", "giant rat"]})
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack giant rat"
+    assert sent[-1] == "att giant rat"
     assert not any(c.startswith("bs ") for c in sent)
     state.prompt_seq += 1
     n = len(sent)
@@ -4175,7 +4185,7 @@ def test_party_combat_off_leftover_kobold_no_sn() -> None:
     n = len(sent)
     b.tick(state, sent.append, pending=False)
     assert "sn" not in sent[n:]
-    assert sent[n:][-1] == "attack kobold thief"
+    assert sent[n:][-1] == "att kobold thief"
 
 
 def test_matt_swings_leftover_kobold_after_combat_off() -> None:
@@ -4191,7 +4201,7 @@ def test_matt_swings_leftover_kobold_after_combat_off() -> None:
         state.apply(ev)
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack kobold thief"
+    assert sent[-1] == "aa kobold thief"
     assert "sn" not in sent
     assert "cast bless" not in sent
 
@@ -4266,7 +4276,7 @@ def test_combat_off_looks_then_engages() -> None:
     state.apply({"kind": "arrive", "name": "giant rat"})
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack giant rat"
+    assert sent[-1] == "att giant rat"
 
 
 def test_creep_in_attacks_without_look() -> None:
@@ -4286,7 +4296,7 @@ def test_creep_in_attacks_without_look() -> None:
     state.mobs = ["giant rat"]
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack giant rat"]
+    assert sent == ["att giant rat"]
 
 
 def test_same_type_respawn_attacks() -> None:
@@ -4306,7 +4316,7 @@ def test_same_type_respawn_attacks() -> None:
     state.mobs = ["giant rat"]
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack giant rat"]
+    assert sent == ["att giant rat"]
 
 
 def test_no_second_look_when_already_scanned() -> None:
@@ -4347,7 +4357,7 @@ def test_creep_breaks_look_wait() -> None:
     state.mobs = ["giant rat"]
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack giant rat"]
+    assert sent == ["att giant rat"]
 
 
 def test_empty_look_waits_then_creep() -> None:
@@ -4369,7 +4379,7 @@ def test_empty_look_waits_then_creep() -> None:
     state.mobs = ["giant rat"]
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack giant rat"
+    assert sent[-1] == "att giant rat"
     assert "break" not in sent
 
 
@@ -4394,7 +4404,7 @@ def test_say_attack_does_not_retry() -> None:
     state.mobs = ["giant rat"]
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack giant rat"
+    assert sent[-1] == "att giant rat"
     assert "break" not in sent
 
 
@@ -4416,12 +4426,12 @@ def test_look_scan_listed_lop_engages() -> None:
     state.mobs = ["acid slime"]
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack acid slime"]
+    assert sent == ["att acid slime"]
     state.apply({"kind": "exits", "exits": ["u"]})
     state.apply({"kind": "arrive", "name": "small carrion beast"})
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack acid slime", "attack carrion beast"]
+    assert sent == ["att acid slime", "att carrion beast"]
 
 
 def test_no_double_down_then_attack() -> None:
@@ -4457,7 +4467,7 @@ def test_no_double_down_then_attack() -> None:
     state.apply({"kind": "also_here", "mobs": ["nasty acid slime"]})
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack acid slime"
+    assert sent[-1] == "att acid slime"
 
 
 def test_arena_look_after_down_attacks() -> None:
@@ -4491,7 +4501,7 @@ def test_arena_look_after_down_attacks() -> None:
         state.apply(ev)
     state.empty_if_look_missed(kinds, look)
     b.tick(state, sent.append, pending=False)
-    assert sent == ["d", "attack acid slime"]
+    assert sent == ["d", "att acid slime"]
 
 
 def _walk_in_two_lops(klass: str, **kwargs) -> tuple[Brain, WorldState, list[str]]:
@@ -4529,7 +4539,7 @@ def test_walk_in_slime_lashworm_no_rest_paladin() -> None:
     b, state, sent = _walk_in_two_lops("paladin", me="sysop Matt")
     b.tick(state, sent.append, pending=False)
     assert "rest" not in sent
-    assert sent[-1] in ("attack acid slime", "attack lashworm")
+    assert sent[-1] in ("aa acid slime", "aa lashworm")
 
 
 def test_walk_in_slime_lashworm_no_rest_ninja() -> None:
@@ -4547,7 +4557,7 @@ def test_walk_in_slime_lashworm_visible_ninja_attacks() -> None:
     b, state, sent = _walk_in_two_lops("ninja", me="klymacks")
     b.tick(state, sent.append, pending=False)
     assert "rest" not in sent
-    assert sent[-1] in ("attack acid slime", "attack lashworm")
+    assert sent[-1] in ("att acid slime", "att lashworm")
     assert not any(cmd.startswith("bs ") for cmd in sent)
 
 
@@ -4581,8 +4591,10 @@ def test_walk_in_look_scan_hides_lops_no_rest() -> None:
         b.tick(state, sent.append, pending=False)
         assert "rest" not in sent, (klass, sent)
         assert sent[-1] in (
-            "attack acid slime",
-            "attack lashworm",
+            "att acid slime",
+            "att lashworm",
+            "aa acid slime",
+            "aa lashworm",
             "bs acid slime",
             "bs lashworm",
             "u",
@@ -4653,11 +4665,11 @@ def test_no_look_on_prompt_after_attack() -> None:
     state.apply({"kind": "arrive", "name": "nasty acid slime"})
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack acid slime"]
+    assert sent == ["att acid slime"]
     state.prompt_seq += 1
     state.in_combat = True
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack acid slime"]
+    assert sent == ["att acid slime"]
     assert "look" not in sent
 
 
@@ -4677,12 +4689,12 @@ def test_arrive_lashworm_one_attack_then_still() -> None:
     state.apply({"kind": "arrive", "name": "nasty lashworm"})
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack lashworm"]
+    assert sent == ["att lashworm"]
     for _ in range(3):
         state.prompt_seq += 1
         state.in_combat = True
         b.tick(state, sent.append, pending=False)
-    assert sent == ["attack lashworm"]
+    assert sent == ["att lashworm"]
     assert "look" not in sent
 
 
@@ -4709,7 +4721,7 @@ def test_combat_off_empty_no_attack() -> None:
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
     assert sent == ["look"]
-    assert not any(c.startswith("attack") for c in sent)
+    assert not any(c.startswith(("att ", "aa ", "attack ")) for c in sent)
     assert "bs " not in " ".join(sent)
 
 
@@ -4738,8 +4750,8 @@ def test_combat_off_echo_does_not_loop_look_attack() -> None:
         b.tick(state, sent.append, pending=False)
         state.prompt_seq += 1
     assert "look" not in sent
-    assert sent.count("attack acid slime") == 0
-    assert not any(c.startswith("attack") for c in sent)
+    assert sent.count("att acid slime") == 0
+    assert not any(c.startswith(("att ", "aa ", "attack ")) for c in sent)
 
 
 def test_sense_and_engage() -> None:
@@ -4757,7 +4769,7 @@ def test_sense_and_engage() -> None:
     state.mobs = ["A small giant rat"]
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack giant rat"]
+    assert sent == ["att giant rat"]
 
 
 def test_sneak_in_after_loot_attacks() -> None:
@@ -4781,7 +4793,7 @@ def test_sneak_in_after_loot_attacks() -> None:
     state.apply({"kind": "arrive", "name": "small kobold thief"})
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack kobold thief"
+    assert sent[-1] == "att kobold thief"
 
 
 def test_get_coins_breaks_combat_must_attack_again() -> None:
@@ -4811,7 +4823,7 @@ def test_get_coins_breaks_combat_must_attack_again() -> None:
     state.in_combat = False
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack giant rat"
+    assert sent[-1] == "att giant rat"
     assert not b._need_swing
 
 
@@ -4942,15 +4954,13 @@ def _one_lop_swing(sent: list[str], *, hidden: bool) -> None:
     assert not any(cmd.startswith("attack ") for cmd in sent)
 
 
-def test_ninja_pit_slime_lashworm_leaves_when_visible() -> None:
+def test_ninja_pit_slime_lashworm_fights_when_visible() -> None:
     b, state = _arena_ninja_lops()
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["u"]
+    assert sent[0] in {"att acid slime", "att lashworm"}
+    assert "u" not in sent
     assert "sn" not in sent
-    assert "attack" not in " ".join(sent)
-    assert not any(cmd.startswith("bs ") for cmd in sent)
-    assert "road" in state.room.lower()
 
 
 def test_ninja_pit_slime_lashworm_bs_when_sneaking() -> None:
@@ -4970,14 +4980,14 @@ def test_ninja_pit_lops_engage_during_look_scan() -> None:
     _one_lop_swing(sent, hidden=True)
 
 
-def test_ninja_pit_lops_leave_while_sneak_wait() -> None:
+def test_ninja_pit_lops_fight_while_sneak_wait() -> None:
     b, state = _arena_ninja_lops()
     b._sneak_wait = True
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["u"]
+    assert sent[0] in {"att acid slime", "att lashworm"}
+    assert "u" not in sent
     assert "sn" not in sent
-    assert "attack" not in " ".join(sent)
 
 
 def test_ninja_pit_lops_solo_with_matt_leader() -> None:
@@ -5138,11 +5148,9 @@ def test_ninja_pit_lop_attacks_not_sneak() -> None:
     state.mobs = ["nasty lashworm"]
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["u"]
+    assert sent == ["att lashworm"]
     assert "sn" not in sent
-    assert "attack" not in sent
-    assert not any(cmd.startswith("bs ") for cmd in sent)
-    assert "road" in state.room.lower()
+    assert "u" not in sent
 
 
 def test_ninja_empty_pit_visible_goes_up() -> None:
@@ -5263,7 +5271,7 @@ def test_on_ambush_on_empty_road_fail_retries() -> None:
     assert not b._sneak_armed
 
 
-def test_on_ambush_on_pit_slime_goes_up() -> None:
+def test_on_ambush_on_pit_slime_fights() -> None:
     b, state = _arena_ninja_lops()
     b.stealth = "walk"
     assert b.toggle_stealth() == "always"
@@ -5275,20 +5283,10 @@ def test_on_ambush_on_pit_slime_goes_up() -> None:
     _boot_look_done(state, mobs=["acid slime", "nasty lashworm"])
     later: list[str] = []
     b.tick(state, later.append, pending=False)
-    assert later == ["break"]
-    state.prompt_seq += 1
-    b.tick(state, later.append, pending=False)
-    assert later[-1] == "u"
-    state.prompt_seq += 1
-    b.tick(state, later.append, pending=False)
-    assert later[-1] == "s"
+    assert later[0] in {"att acid slime", "att lashworm"}
+    assert "u" not in later
+    assert "s" not in later
     assert "sn" not in later
-    state.prompt_seq += 1
-    state.in_combat = False
-    state.scanned = True
-    state.mobs = []
-    b.tick(state, later.append, pending=False)
-    assert later[-1] == "sn"
 
 
 def test_on_ambush_on_walk_is_empty() -> None:
@@ -5336,8 +5334,8 @@ def test_f7_ambush_boot_looks_before_sn_or_swing() -> None:
     assert not any(cmd.startswith("bs ") for cmd in sent)
 
 
-def test_f7_ambush_boot_arena_rat_break_u_s_then_sn() -> None:
-    """Occupied arena after the boot look: break, u, s, then sn on the empty road."""
+def test_f7_ambush_boot_arena_rat_fights() -> None:
+    """Occupied arena after the boot look: swing, do not leave to sn."""
     b, state = _solo_ambush_boot()
     state.mobs = ["giant rat"]
     b.toggle_hunt()
@@ -5346,26 +5344,10 @@ def test_f7_ambush_boot_arena_rat_break_u_s_then_sn() -> None:
     assert sent == ["look"]
     _boot_look_done(state, mobs=["giant rat"])
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "break"
-    state.prompt_seq += 1
-    b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "u"
-    assert "road" in state.room.lower()
-    state.prompt_seq += 1
-    b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "s"
-    assert sent == ["look", "break", "u", "s"]
-    state.prompt_seq += 1
-    state.in_combat = False
-    state.scanned = True
-    state.mobs = []
-    b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "sn"
-    assert sent.count("sn") == 1
-    assert b._sneak_wait
-    state.prompt_seq += 1
-    b.tick(state, sent.append, pending=False)
-    assert sent.count("sn") == 1
+    assert sent[-1] == "att giant rat"
+    assert "u" not in sent
+    assert "s" not in sent
+    assert "sn" not in sent
 
 
 def test_f7_ambush_boot_empty_looks_then_sn_once() -> None:
@@ -5412,7 +5394,7 @@ def test_f7_ambush_boot_visible_lop_on_road_attacks() -> None:
     assert sent == ["look"]
     _boot_look_done(state, mobs=["giant rat"])
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack giant rat"
+    assert sent[-1] == "att giant rat"
     assert "u" not in sent
     assert "s" not in sent
     assert "sn" not in sent
@@ -5425,7 +5407,7 @@ def test_f7_following_ambush_boot_does_not_leave() -> None:
     b.toggle_hunt()
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["attack acid slime"]
+    assert sent == ["att acid slime"]
     assert "u" not in sent
     assert "s" not in sent
     assert "look" not in sent
@@ -5507,14 +5489,93 @@ def test_ninja_ambush_following_empty_pit_stays() -> None:
     assert "attack" not in " ".join(sent)
 
 
-def test_ninja_ambush_pit_lops_leaves_to_sneak() -> None:
+def test_ninja_ambush_pit_lops_fights() -> None:
     b, state = _arena_ninja_lops(ambush="stand")
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent == ["u"]
+    assert sent[0] in {"att acid slime", "att lashworm"}
+    assert "u" not in sent
     assert "sn" not in sent
-    assert "attack" not in " ".join(sent)
-    assert not any(cmd.startswith("bs ") for cmd in sent)
+
+
+def test_corwyn_blocks_sneak() -> None:
+    b, state = _road_hunt("ninja", "always")
+    state.apply({"kind": "also_here", "mobs": ["Corwyn"]})
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert "sn" not in sent
+    assert occupants_in(state.mobs) == ["Corwyn"]
+
+
+def test_coorwyn_blocks_sneak() -> None:
+    b, state = _road_hunt("ninja", "always")
+    state.apply({"kind": "also_here", "mobs": ["Coorwyn"]})
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert "sn" not in sent
+    assert occupants_in(state.mobs) == ["Coorwyn"]
+
+
+def test_party_empty_with_matt_still_sneaks() -> None:
+    b, state = _road_hunt(
+        "ninja", "always", party_leader="Matt", me="klymacks"
+    )
+    b._followed = True
+    b._joined = True
+    b._ranked = True
+    state.following = "Matt"
+    state.apply({"kind": "also_here", "mobs": ["Matt"]})
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["sn"]
+
+
+def test_join_arena_slime_fights_not_i_or_look() -> None:
+    """Drop into the pit from Enter the Realm: swing, do not i/look/health."""
+    for klass, me, swing in (
+        ("ninja", "klymacks", "att acid slime"),
+        ("paladin", "matt", "aa acid slime"),
+    ):
+        b = Brain(allowed=True, klass=klass, me=me, stealth="walk")
+        state = WorldState()
+        state.in_realm = True
+        state.hp = 28
+        state.max_hp = 28
+        state.max_hp_known = True
+        state.prompt_seq = 12
+        state.room = "Newhaven, Arena"
+        state.exits = ["u"]
+        state.scanned = True
+        state.apply({"kind": "also_here", "mobs": ["acid slime"]})
+        b.toggle_hunt()
+        assert b.open_gear_inv(state) is None
+        sent: list[str] = []
+        b.tick(state, sent.append, pending=False)
+        assert sent == [swing], (klass, sent)
+        assert "i" not in sent
+        assert "look" not in sent
+        assert "health" not in sent
+
+
+def test_join_arena_slime_fights_before_health() -> None:
+    b = Brain(allowed=True, klass="ninja", me="klymacks")
+    b.gear_done = True
+    b.mode = "hunt"
+    b._in_camp = True
+    b._asked_health = False
+    state = WorldState()
+    state.in_realm = True
+    state.hp = 28
+    state.max_hp = 28
+    state.max_hp_known = False
+    state.prompt_seq = 13
+    state.room = "Newhaven, Arena"
+    state.scanned = True
+    state.apply({"kind": "also_here", "mobs": ["acid slime"]})
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["att acid slime"]
+    assert "health" not in sent
 
 
 def test_ninja_ambush_pit_lops_hidden_backstabs() -> None:
@@ -5800,7 +5861,7 @@ def test_after_aid_road_monster_fights() -> None:
     state.scanned = True
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack giant rat"
+    assert sent[-1] == "att giant rat"
     assert b.next_action != "aid"
     assert "join" not in " ".join(sent).lower()
 
@@ -6005,7 +6066,7 @@ def test_go_train_fights_first() -> None:
     b.request_train()
     sent: list[str] = []
     b.tick(state, sent.append, pending=False)
-    assert sent[-1] == "attack giant rat"
+    assert sent[-1] == "aa giant rat"
     assert b._want_train
 
 
@@ -6163,6 +6224,7 @@ if __name__ == "__main__":
     test_matt_attacks_slime_when_klymacks_absent()
     test_matt_aa_default_on()
     test_matt_aa_off_holds_swing()
+    test_matt_aa_bashes_not_attack()
     test_ninja_hunts_without_aa()
     test_klymacks_no_attack_before_follow()
     test_no_join_without_invite_hunt()
@@ -6270,15 +6332,20 @@ if __name__ == "__main__":
     test_ninja_road_sneak_retries_then_down()
     test_ninja_road_sneak_try_fail_same_tick_retries()
     test_ninja_pit_lop_attacks_not_sneak()
-    test_ninja_pit_slime_lashworm_leaves_when_visible()
+    test_ninja_pit_slime_lashworm_fights_when_visible()
     test_ninja_pit_slime_lashworm_bs_when_sneaking()
     test_ninja_pit_lops_engage_during_look_scan()
-    test_ninja_pit_lops_leave_while_sneak_wait()
+    test_ninja_pit_lops_fight_while_sneak_wait()
     test_ninja_pit_lops_solo_with_matt_leader()
     test_ninja_ambush_stand_road_sns_before_d()
     test_ninja_ambush_empty_road_full_hp_sns()
     test_ninja_ambush_following_empty_pit_stays()
-    test_ninja_ambush_pit_lops_leaves_to_sneak()
+    test_ninja_ambush_pit_lops_fights()
+    test_corwyn_blocks_sneak()
+    test_coorwyn_blocks_sneak()
+    test_party_empty_with_matt_still_sneaks()
+    test_join_arena_slime_fights_not_i_or_look()
+    test_join_arena_slime_fights_before_health()
     test_ninja_ambush_pit_lops_hidden_backstabs()
     test_ninja_ambush_following_does_not_move()
     test_ninja_auto_following_walks()
@@ -6298,11 +6365,11 @@ if __name__ == "__main__":
     test_ninja_toggle_stealth_flips()
     test_on_ambush_on_empty_road_sns()
     test_on_ambush_on_empty_road_fail_retries()
-    test_on_ambush_on_pit_slime_goes_up()
+    test_on_ambush_on_pit_slime_fights()
     test_on_ambush_on_walk_is_empty()
     test_on_ambush_on_sitting_breaks_then_sn()
     test_f7_ambush_boot_looks_before_sn_or_swing()
-    test_f7_ambush_boot_arena_rat_break_u_s_then_sn()
+    test_f7_ambush_boot_arena_rat_fights()
     test_f7_ambush_boot_empty_looks_then_sn_once()
     test_f7_ambush_boot_hidden_looks_then_bs()
     test_f7_ambush_boot_visible_lop_on_road_attacks()

@@ -200,21 +200,30 @@ def test_peek_queues_behind_pending() -> None:
     assert brain.mode == "hunt"
     first = _next_cmd(pacer_first, 1.0)
     second = _next_cmd(pacer_first, 3.0)
-    assert first is not None and first.endswith(b"attack rat\r")
+    assert first is not None and first.endswith(b"att rat\r")
     assert second is not None and second.endswith(b"exp\r")
 
 
 def test_realm_line_keeps_attack() -> None:
-    """`attack filthbug` engages. `k` / `a` / `at` are speech or collide."""
-    assert _CLIENT.realm_line("attack acid slime") == "attack acid slime"
-    assert _CLIENT.realm_line("k kobold thief") == "attack kobold thief"
-    assert _CLIENT.realm_line("kill filthbug") == "attack filthbug"
-    assert _CLIENT.realm_line("attack") == "attack"
+    """`att filthbug` engages. `k` / `a` / `at` are speech or collide."""
+    assert _CLIENT.realm_line("attack acid slime") == "att acid slime"
+    assert _CLIENT.realm_line("att acid slime") == "att acid slime"
+    assert _CLIENT.realm_line("k kobold thief") == "att kobold thief"
+    assert _CLIENT.realm_line("kill filthbug") == "att filthbug"
+    assert _CLIENT.realm_line("attack") == "att"
     assert _CLIENT.realm_line("look") == "look"
     assert _CLIENT.realm_line("bs giant rat") == "bs giant rat"
+    assert _CLIENT.realm_line("bash kobold thief") == "aa kobold thief"
+    assert _CLIENT.realm_line("aa kobold thief") == "aa kobold thief"
+    assert _CLIENT.realm_line("attack giant rat", paladin=True) == "aa giant rat"
+    assert _CLIENT.realm_line("att giant rat", paladin=True) == "aa giant rat"
+    assert _CLIENT.realm_line("bash giant rat", paladin=True) == "aa giant rat"
+    pal = _CLIENT.KeyPacer(paladin=True)
+    pal.push_text("attack giant rat")
+    assert _next_cmd(pal, 1.0) == b"aa giant rat\r"
     pacer = _CLIENT.KeyPacer()
     pacer.push_text("attack acid slime")
-    assert _next_cmd(pacer, 1.0) == b"attack acid slime\r"
+    assert _next_cmd(pacer, 1.0) == b"att acid slime\r"
     pacer.push_text("M", wipe=False)
     assert pacer.take(3.0) == b"M\r"
 
@@ -736,17 +745,17 @@ def test_toggle_sheet_cancels_walk_and_hold() -> None:
 
 
 def test_sheet_lock_keeps_fsd_keys_with_leftover_hp() -> None:
-    """Leftover [HP=] hides the form title. F11 lock still owns the keys."""
+    """Leftover [HP=] on TRAIN STATS is still the form. F11 lock owns keys if the title is gone."""
     screen = _CLIENT.AnsiScreen()
     screen.feed(b"\x1b[1;1HTRAIN STATS\r\nGiven Name\r\n")
     screen.feed(b"\x1b[25;1H[HP=28]: ")
     state = WorldState()
     state.in_realm = True
     state.hp = 28
-    assert not screen.looks_like_creation()
-    assert _CLIENT.use_local_input(screen, state)
+    assert screen.looks_like_creation()
+    assert not _CLIENT.use_local_input(screen, state)
     assert not _CLIENT.use_local_input(screen, state, sheet_lock=True)
-    assert _CLIENT.form_frozen(screen, True)
+    assert _CLIENT.form_frozen(screen)
     asked: list[str] = []
     assert not _CLIENT.maybe_ask_exp(state, asked.append, frozen=True)
     assert asked == []
@@ -760,6 +769,14 @@ def test_sheet_lock_keeps_fsd_keys_with_leftover_hp() -> None:
         frozen=True,
     )
     assert sent == []
+
+    hidden = _CLIENT.AnsiScreen()
+    hidden.feed(b"\x1b[1;1HGiven Name   klymacks\r\n")
+    hidden.feed(b"\x1b[25;1H[HP=28]: ")
+    assert not hidden.looks_like_creation()
+    assert _CLIENT.use_local_input(hidden, state)
+    assert not _CLIENT.use_local_input(hidden, state, sheet_lock=True)
+    assert _CLIENT.form_frozen(hidden, True)
 
 
 def test_hold_snapshot_writes_utf8_grid() -> None:
@@ -878,6 +895,38 @@ def test_window_title_is_distinct() -> None:
     assert b"Matt" in osc
     assert _CLIENT.osc_set_title("") == b""
     assert _CLIENT.osc_set_title("   ") == b""
+
+
+def test_chrome_title_shows_who() -> None:
+    screen = _CLIENT.AnsiScreen()
+    state = WorldState()
+    state.in_realm = True
+    state.hp = 28
+    state.max_hp = 28
+    kly = Brain(allowed=True, me="sysop Klymacks", klass="ninja")
+    kly.mode = "hunt"
+    kly_bar = _plain_bar(_CLIENT.chrome(30, screen, "x", "127.0.0.1", state, kly))
+    assert "FINN'S REALM" in kly_bar
+    assert kly_bar.index("FINN'S REALM") < kly_bar.index("klymacks")
+    assert "klymacks" in kly_bar
+    assert "Ninja" in kly_bar
+    assert "Klymacks" not in kly_bar
+    assert "sysop" not in kly_bar
+    assert _CLIENT.footer_who(kly) == "klymacks (Ninja)"
+    matt = Brain(allowed=True, me="matt Matt", klass="paladin")
+    matt.mode = "hunt"
+    matt_bar = _plain_bar(_CLIENT.chrome(30, screen, "x", "127.0.0.1", state, matt))
+    assert "Matt" in matt_bar
+    assert "Paladin" in matt_bar
+    assert _CLIENT.footer_who(matt) == "Matt (Paladin)"
+    sheet = _CLIENT.AnsiScreen()
+    sheet.feed(b"M A J O R  M U D Character Creation\r\nGiven Name   klymacks\r\n")
+    sheet_bar = _plain_bar(
+        _CLIENT.chrome(30, sheet, "x", "127.0.0.1", WorldState(), kly)
+    )
+    assert "klymacks" in sheet_bar
+    assert "Ninja" in sheet_bar
+    assert "character sheet" in sheet_bar
 
 
 def test_paint_splash_is_graffiti() -> None:
@@ -1519,6 +1568,59 @@ def test_chrome_shows_hp_and_ma_over_max() -> None:
     assert crowded.count("EXP ") == 1
 
 
+def test_leftover_hp_keeps_creation_sheet() -> None:
+    """Mid-sheet [HP=] leak must not drop FSD keys or paint the realm > bar."""
+    screen = _CLIENT.AnsiScreen()
+    screen.feed(b"\x1b[2J\x1b[1;1H")
+    screen.feed(b"M A J O R  M U D Character Creation\r\n")
+    screen.feed(b"Given Name   klymacks\r\n")
+    screen.feed(b"Family Name  Urmom\r\n")
+    screen.feed(b"Point Cost Chart\r\n")
+    screen.feed(b"\x1b[10;1H[HP=30]:                         40")
+    screen.feed(b"\x1b[20;1H20 CP Left\r\n")
+    screen.feed(b"Exit: SAVE\r\n")
+    state = WorldState()
+    state.in_realm = True
+    state.hp = 30
+    state.max_hp = 30
+    state.max_hp_known = True
+    blob = screen.text()
+    assert "Character Creation" in blob
+    assert "Point Cost Chart" in blob
+    assert "CP Left" in blob
+    assert "Exit: SAVE" in blob
+    assert "[HP=" in blob
+    assert screen.looks_like_creation()
+    assert not _CLIENT.use_local_input(screen, state)
+    assert _CLIENT.form_frozen(screen)
+    assert _CLIENT.status_line(screen, "127.0.0.1") == "character sheet"
+    asked: list[str] = []
+    assert not _CLIENT.maybe_ask_exp(
+        state, asked.append, frozen=_CLIENT.form_frozen(screen)
+    )
+    assert asked == []
+    sent: list[str] = []
+    _CLIENT.maybe_auto_party(
+        state,
+        Brain(allowed=True, klass="ninja"),
+        sent.append,
+        invited=True,
+        followed=False,
+        frozen=_CLIENT.play_paused(
+            Brain(allowed=True, klass="ninja"),
+            frozen=_CLIENT.form_frozen(screen),
+        ),
+    )
+    assert sent == []
+    brain = Brain(allowed=True, klass="ninja")
+    brain.mode = "hunt"
+    brain.next_action = "att slime"
+    bar = _CLIENT.chrome(30, screen, "x", "127.0.0.1", state, brain, typed="att")
+    plain = _plain_bar(bar)
+    assert "> att" not in plain
+    assert _CLIENT.status_line(screen, "127.0.0.1") == "character sheet"
+
+
 def test_realm_prompt_drops_sheet_mask() -> None:
     """Leftover TRAIN STATS / creation text must not star-mask the > bar."""
     screen = _CLIENT.AnsiScreen()
@@ -1536,12 +1638,21 @@ def test_realm_prompt_drops_sheet_mask() -> None:
     assert _CLIENT.status_line(screen, "127.0.0.1") == "character sheet"
 
     screen.fg, screen.bold, screen.rev = 1, True, True
-    # Form leftovers stay; realm prompt overlays — same as a live EXIT.
+    # Leftover [HP=] on the live form is not EXIT.
     screen.feed(b"\x1b[24;1H[HP=28]: ")
     blob = screen.text()
     assert "Character Creation" in blob
     assert "Given Name" in blob
     assert "[HP=" in blob
+    assert screen.looks_like_creation()
+    assert not _CLIENT.use_local_input(screen, state)
+    assert _CLIENT.status_line(screen, "127.0.0.1") == "character sheet"
+
+    # Live EXIT: room chrome plus [HP=], even if form leftovers remain.
+    screen.feed(b"\x1b[18;1HObvious exits: north, south\r\n")
+    screen.feed(b"Also here: a giant rat\r\n")
+    screen.feed(b"You notice a club.\r\n")
+    screen.feed(b"\x1b[24;1H[HP=28]: ")
     assert not screen.looks_like_creation()
     assert _CLIENT.use_local_input(screen, state)
     screen.leave_form()
@@ -1561,6 +1672,9 @@ def test_realm_prompt_drops_sheet_mask() -> None:
     assert train.looks_like_creation()
     assert not _CLIENT.use_local_input(train, state)
     train.feed(b"\x1b[25;1H[HP=28]: ")
+    assert train.looks_like_creation()
+    assert not _CLIENT.use_local_input(train, state)
+    train.feed(b"\x1b[22;1HObvious exits: west\r\n")
     assert not train.looks_like_creation()
     assert _CLIENT.use_local_input(train, state)
 
@@ -1568,6 +1682,8 @@ def test_realm_prompt_drops_sheet_mask() -> None:
     race.feed(b"\x1b[1;1HChoose a race:\r\n  1. Human\r\n  2. Dwarf\r\n")
     assert race.looks_like_creation()
     assert not _CLIENT.use_local_input(race, WorldState())
+    race.feed(b"\x1b[25;1H[HP=28]: ")
+    assert not race.looks_like_creation()
 
 
 if __name__ == "__main__":
@@ -1610,6 +1726,7 @@ if __name__ == "__main__":
     test_toggle_sheet_unlocks_and_cancels_walk()
     test_toggle_sheet_cancels_walk_and_hold()
     test_sheet_lock_keeps_fsd_keys_with_leftover_hp()
+    test_leftover_hp_keeps_creation_sheet()
     test_hold_snapshot_writes_utf8_grid()
     test_copy_hold_clipboard_returns_bool()
     test_f8_paladin_toggles_aa()
@@ -1617,6 +1734,7 @@ if __name__ == "__main__":
     test_help_overlay_lists_keys()
     test_fkey_table_feeds_tip_and_hold()
     test_window_title_is_distinct()
+    test_chrome_title_shows_who()
     test_paint_splash_is_graffiti()
     test_login_ans_replaces_mbbs_banner()
     test_chrome_lists_new_map()

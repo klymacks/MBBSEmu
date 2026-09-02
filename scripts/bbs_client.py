@@ -461,16 +461,29 @@ class AnsiScreen:
         return "\n".join(self.line(y) for y in range(self.rows))
 
     def looks_like_creation(self) -> bool:
-        """FSD sheet or race/class pick. [HP=] means the form is gone."""
+        """FSD sheet or race/class pick.
+
+        Leftover [HP=] on Character Creation / TRAIN STATS is still the
+        form. Obvious exits / Also here / You notice plus [HP=] is EXIT.
+        """
         blob = self.text()
-        if "[HP=" in blob:
+        leftover_hp = "[HP=" in blob
+        if leftover_hp and (
+            "Obvious exits" in blob
+            or "Also here" in blob
+            or "You notice" in blob
+        ):
             return False
-        if "Given Name" in blob:
-            return (
-                "Character Creation" in blob
-                or "TRAIN STATS" in blob
-                or "Point Cost Chart" in blob
-            )
+        if (
+            "Character Creation" in blob
+            or "Point Cost Chart" in blob
+            or "TRAIN STATS" in blob
+            or "Exit: SAVE" in blob
+            or "cp left" in blob.lower()
+        ):
+            return True
+        if leftover_hp:
+            return False
         low = blob.lower()
         return (
             "select a race" in low
@@ -517,27 +530,51 @@ def _sgr_bytes(cell: Cell) -> bytes:
     return f"\x1b[{';'.join(parts)}m".encode()
 
 
-def realm_line(text: str) -> str:
-    """Swing is the full `attack` word. `k` / `kill` / `a` / `at` are speech or collide."""
+def realm_line(text: str, *, paladin: bool = False) -> str:
+    """Visible swing is `att`. Paladin bash short form is `aa`. `k` is speech."""
     raw = text.strip()
     low = raw.lower()
-    if low in {"attack", "kill", "k"}:
+
+    def _aim_after(prefix: str) -> str:
+        rest = raw[len(prefix) :].strip()
+        return rest
+
+    if paladin:
+        if low in {"attack", "att", "bash", "aa", "kill", "k"}:
+            return "aa"
+        for prefix in ("attack ", "att ", "bash ", "aa ", "kill "):
+            if low.startswith(prefix):
+                aim = _aim_after(prefix)
+                return f"aa {aim}" if aim else "aa"
+        if low.startswith("k ") and not low.startswith("kly"):
+            aim = _aim_after("k ")
+            return f"aa {aim}" if aim else "aa"
+        return raw
+    if low in {"attack", "att", "kill", "k"}:
         return attack_line()
     if low.startswith("attack "):
         return attack_line(raw[7:])
+    if low.startswith("att "):
+        return attack_line(raw[4:])
     if low.startswith("kill "):
         return attack_line(raw[5:])
     if low.startswith("k ") and not low.startswith("kly"):
         return attack_line(raw[2:])
+    if low in {"bash"}:
+        return "aa"
+    if low.startswith("bash "):
+        rest = raw[5:].strip()
+        return f"aa {rest}" if rest else "aa"
     return raw
 
 
 class KeyPacer:
     """FSD only accepts one ASCII byte or one 3-byte arrow per poll."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, paladin: bool = False) -> None:
         self._q: collections.deque[bytes] = collections.deque()
         self._ready_at = 0.0
+        self.paladin = paladin
 
     def push(self, key: bytes) -> None:
         if key:
@@ -545,7 +582,7 @@ class KeyPacer:
 
     def push_text(self, text: str, *, wipe: bool = True) -> None:
         """One line, one CR. Do not prefix backspaces — extras eat `at giant rat`."""
-        line = realm_line(text) if wipe else text
+        line = realm_line(text, paladin=self.paladin) if wipe else text
         if line:
             self._q.append(line.encode("ascii", "replace") + b"\r")
 
@@ -617,6 +654,9 @@ _PRY_SKIP = frozenset(
         "se",
         "sw",
         "attack",
+        "att",
+        "bash",
+        "aa",
         "at",
         "k",
         "kill",
@@ -904,8 +944,8 @@ def handle_special_key(
     copies it; hunt keeps ticking. That is copy hold, not train hold.
     F11 in the realm walks to the trainer or pauses the brain so the
     player types stats. F11 does not freeze the screen. F8 walk→ambush
-    paces `look` immediately — occupied arena then `break`/`u`/`s` on hunt
-    ticks; empty room then one `sn`. Paladin F8 flips client `aa`
+    paces `look` immediately if Also here is stale; a listed lop is a
+    fight. Empty room then one `sn`. Paladin F8 flips client `aa`
     (1.11p has no aa command).
     """
     if key == KEY_F1:
@@ -1140,6 +1180,22 @@ def window_title(player: dict[str, object]) -> str:
     return f"Finn's Realm — {character_label(player)}"
 
 
+def footer_who(brain: Brain) -> str:
+    """Given name + class on the FINN'S REALM title row."""
+    tokens = [part for part in brain.me.replace(",", " ").split() if part]
+    name = ""
+    if tokens:
+        name = character_label({"username": tokens[0], "given": tokens[-1]})
+    klass = (brain.klass or "").strip().lower()
+    if klass in {"pal", "p"}:
+        klass = "paladin"
+    if klass:
+        klass = klass[:1].upper() + klass[1:]
+    if name and klass:
+        return f"{name} ({klass})"
+    return name or klass
+
+
 def osc_set_title(title: str) -> bytes:
     """OSC 0 icon+window title. Never emit an empty name."""
     text = (title or "").strip()
@@ -1232,8 +1288,13 @@ def chrome(
     elif state.can_train():
         tag = fkey_label(11)
     right = status_line(screen, host)
+    if right == "Finn's Realm":
+        right = ""
     if tag:
         right = f"{right}  {tag}" if right else tag
+    who = footer_who(brain)
+    if who:
+        right = f"{who}  {right}" if right else who
     head = f"{title}{right.rjust(80 - len(title))}"[:80]
     if state.in_realm and state.hp is not None:
         vitals = state.hp_label()
@@ -1426,7 +1487,9 @@ def run(host: str, port: int, player: dict[str, object], auto: bool) -> int:
 
     screen = AnsiScreen()
     paint_splash(screen, host, port)
-    pacer = KeyPacer()
+    pacer = KeyPacer(
+        paladin=str(player.get("class") or "").strip().lower() == "paladin"
+    )
     play = bool(player.get("auto_play", True)) and auto
     clear_lock()
     pilot = Autopilot(player, play) if auto else None
@@ -1505,7 +1568,11 @@ def run(host: str, port: int, player: dict[str, object], auto: bool) -> int:
                 continue
             take(ev)
         state.empty_if_look_missed(streamed, blob)
-        if "prompt" not in streamed and "[HP=" in blob:
+        if (
+            "prompt" not in streamed
+            and "[HP=" in blob
+            and not screen.looks_like_creation()
+        ):
             idx = blob.rfind("[HP=")
             for ev in parse_events(blob[idx : idx + 40].split("\n", 1)[0]):
                 if ev.get("kind") == "prompt":

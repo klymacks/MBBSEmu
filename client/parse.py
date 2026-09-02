@@ -340,7 +340,7 @@ def _aided_event(raw: str) -> dict[str, object] | None:
 
 
 _SAID_SWING_RE = re.compile(
-    r"^(?:attack|ttack|tack|kill|at|bs|a|k)\s+(.+)$",
+    r"^(?:attack|ttack|tack|kill|bash|att|aa|at|bs|a|k)\s+(.+)$",
     re.IGNORECASE,
 )
 

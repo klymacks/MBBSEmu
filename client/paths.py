@@ -265,7 +265,7 @@ _DIR_PREFIXES = tuple(sorted(_DIR_ALL, key=len, reverse=True))
 _LOOK_NOISE = frozenset({"also", "here", "obvious", "exits"})
 # Leftover verb from `attack attack giant rat` (game eats `at` → `tack`,
 # or `a` → `ttack`). `bs` / `at` are the same class on a ninja swing.
-_SWING_LEFTOVER = frozenset({"attack", "ttack", "tack", "bs", "at"})
+_SWING_LEFTOVER = frozenset({"attack", "ttack", "tack", "bs", "at", "att", "bash", "aa"})
 _SWING_PREFIXES = tuple(sorted(_SWING_LEFTOVER, key=len, reverse=True))
 _MOB_LEAD = frozenset({"giant", "acid"}) | _SKIP_WORDS | frozenset(LOPS)
 
@@ -494,6 +494,32 @@ def players_in(mobs: list[str], extra: set[str] | None = None) -> list[str]:
     return found
 
 
+def _friendly_npc(piece: str) -> bool:
+    """Corwyn, Betram, a town guard — named NPCs, not farm lops."""
+    low = piece.lower().strip(".,!;:")
+    if not low:
+        return False
+    if low in FRIENDLY:
+        return True
+    return any(word in FRIENDLY for word in low.split())
+
+
+def occupants_in(mobs: list[str], extra: set[str] | None = None) -> list[str]:
+    """PCs and named NPCs occupying the room. Sneak needs this empty."""
+    found: list[str] = []
+    for name in mobs:
+        for piece in peel_presence(name, extra):
+            if (
+                is_given_name(piece, extra)
+                or is_player(piece)
+                or is_home_account(piece)
+                or _friendly_npc(piece)
+            ):
+                if piece not in found:
+                    found.append(piece)
+    return found
+
+
 def party_name(name: str, extra: set[str] | None = None) -> str:
     """Invite/join target: the toon, never a leftover exit or lop."""
     for piece in peel_presence(name, extra):
@@ -582,13 +608,14 @@ def attack_name(name: str) -> str:
 def attack_line(name: str = "") -> str:
     """Wire form for a visible swing.
 
-    1.11p live: `attack filthbug` engages. `k kobold thief` is spoken.
+    1.11p live: `att filthbug` engages. `k kobold thief` is spoken.
     `a carrion beast` is speech. `at acid slime` can become spoken `a id slime`.
+    Paladin bash is `aa {aim}`, not this.
     """
     aim = attack_name(name) if name else ""
     if not aim:
-        return "attack"
-    return f"attack {aim}"
+        return "att"
+    return f"att {aim}"
 
 
 def has_toon(name: str, extra: set[str] | None = None) -> bool:

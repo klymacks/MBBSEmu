@@ -241,6 +241,9 @@ class Brain:
         """F7 / hunt: send `i` now so gear does not wait for a refresh."""
         if self.mode != "gear" or self._pry_sent:
             return None
+        if self._listed_fight(state):
+            self._done_gear()
+            return None
         self._pry_sent = True
         self._await_inv = True
         self._inv_after = state.inv_seq
@@ -352,6 +355,9 @@ class Brain:
     def _ninja(self) -> bool:
         return self.klass == "ninja"
 
+    def _paladin(self) -> bool:
+        return self.klass in {"paladin", "pal"}
+
     def _stealth_moves(self) -> bool:
         if not self._ninja():
             return False
@@ -400,10 +406,10 @@ class Brain:
     def on_ambush_on(self, state: WorldState) -> list[str]:
         """Commands to pace when F8 turns ambush on. No takeover.
 
-        Own ambush: `look` first — do not sn/bs/attack/u blind. After that
-        look, hunt sends `break`/`u`/`s` if the pit has a lop, or one `sn`
-        if the room is empty. Following Matt: `sn` only on an empty room;
-        do not walk off with u/s.
+        Own ambush: `look` first unless Also here already listed the room.
+        A listed lop is a fight — do not leave to sneak. Empty room: one
+        `sn`. Following Matt: `sn` only on an empty room; do not walk off
+        with u/s.
         """
         cmds: list[str] = []
 
@@ -431,7 +437,7 @@ class Brain:
         return cmds
 
     def _run_ambush_boot(self, state: WorldState, send) -> bool:
-        """Own ambush start: look, then leave an occupied pit or sn once."""
+        """Own ambush start: look if the listing is stale, else sn or fight."""
         if not self._ambush_boot:
             return False
         if not self._ninja() or not self._stealth_moves() or self._with_leader(state):
@@ -439,8 +445,13 @@ class Brain:
             return False
         if self._boot_plan:
             return self._boot_next(state, send)
+        if self._lops_here(state) and (state.saw_here or self._boot_looked):
+            self._clear_ambush_boot()
+            return False
         if not self._boot_looked:
-            if self._boot_asked:
+            if state.saw_here:
+                self._boot_looked = True
+            elif self._boot_asked:
                 if state.look_scan:
                     self.next_action = "looking"
                     return True
@@ -451,9 +462,6 @@ class Brain:
         if self._stealthed():
             self._clear_ambush_boot()
             return False
-        if self._lops_here(state) and self._in_pit(state):
-            self._boot_plan = ["break", "u", "s"]
-            return self._boot_next(state, send)
         if self._lops_here(state):
             self._clear_ambush_boot()
             return False
@@ -524,7 +532,7 @@ class Brain:
         return self.aa
 
     def _opens_swing(self, state: WorldState) -> bool:
-        """Start a new `attack`. Ninja hunt always; paladin follows `aa`."""
+        """Start a new swing. Ninja hunt always; paladin follows `aa` (bash)."""
         if self._ninja() or state.in_combat or self._attacking:
             return True
         return self.aa
@@ -725,10 +733,12 @@ class Brain:
         return paths.attack_name(name)
 
     def _swing_verb(self, state: WorldState) -> str:
-        """`bs` only when sneak sense says hidden. Else `attack`. Never `k`."""
+        """Hidden ninja `bs`. Paladin bash is `aa`. Else `att`. Never `k`."""
         if self._ninja() and self._stealthed():
             return "bs"
-        return "attack"
+        if self._paladin():
+            return "aa"
+        return "att"
 
     def _strike(self, send, state: WorldState, aim: str) -> bool:
         aim = self._swing_name(aim)
@@ -748,10 +758,8 @@ class Brain:
             self._hidden = False
             if self._inout():
                 self._ambush_out = True
-            self._cmd(send, f"bs {aim}", state)
-            return True
         self._sneak_wait = False
-        self._cmd(send, f"attack {aim}", state)
+        self._cmd(send, f"{verb} {aim}", state)
         return True
 
     def _spell(self, kind: str) -> str:
@@ -1197,6 +1205,7 @@ class Brain:
             if self.mode == "gear":
                 self.mode = "hunt"
 
+        listed = self._listed_fight(state)
         down = self._need_rest(state) or state.mortal or state.bleeding
         may_rest = (
             not self._with_leader(state)
@@ -1205,14 +1214,19 @@ class Brain:
             or state.bleeding
             or self._recovering
         )
+        if listed and self.mode == "gear":
+            self._done_gear()
+        if listed and self.mode == "rest" and not (state.mortal or state.bleeding):
+            self.mode = "hunt"
         if down and self.mode != "rest" and may_rest:
             if self._try_heal(state, send):
                 return
-            self.mode = "rest"
+            if not (listed and not (state.mortal or state.bleeding)):
+                self.mode = "rest"
         if self.mode == "rest":
             self._rest(state, send)
             return
-        if self._dump_extras(state, send):
+        if not listed and self._dump_extras(state, send):
             return
         if self.mode == "gear":
             self._gear(state, send)
@@ -1300,6 +1314,47 @@ class Brain:
     def _lops_here(self, state: WorldState) -> bool:
         return bool(_trusted_live(state) or paths.lop_in(state.mobs))
 
+    def _listed_fight(self, state: WorldState) -> bool:
+        """Join/look already printed a farm lop — swing before i/look/health."""
+        if not self._lops_here(state) or not self._opens_swing(state):
+            return False
+        return bool(
+            state.saw_here
+            or state.saw_see
+            or state.in_combat
+            or self._attacking
+            or (self._in_pit(state) and state.scanned)
+        )
+
+    def _swing_first(self, state: WorldState, send) -> bool:
+        """A listed farm lop is a fight. Skip boot look when Also here already printed."""
+        live = self._aim(state) or paths.lop_in(state.mobs)
+        if not live or not self._opens_swing(state):
+            return False
+        if self._ambush_boot and not self._boot_looked and not state.saw_here:
+            return False
+        if self._ambush_boot:
+            self._clear_ambush_boot()
+        if self._engage_lop(state, send, live):
+            self._evaded = False
+            return True
+        return False
+
+    def _known_here(self, name: str, state: WorldState) -> bool:
+        if self._mine(name, state) or self._me(name):
+            return True
+        if self.leader and self._same_toon(name, self.leader):
+            return True
+        return any(self._same_toon(name, n) for n in state.followers)
+
+    def _strangers_here(self, state: WorldState) -> bool:
+        """Other PCs (Coorwyn) or named NPCs (Corwyn). Cannot sneak with them."""
+        extras = self._aka | state.self_names
+        return any(
+            not self._known_here(name, state)
+            for name in paths.occupants_in(state.mobs, extras)
+        )
+
     def _may_sit(self, state: WorldState) -> bool:
         """Sit only when no lop is here and the pit scan is trustworthy.
 
@@ -1319,7 +1374,7 @@ class Brain:
         """Look mid-swing or on the same prompt as attack/bs flickers combat."""
         if state.in_combat or self._attacking:
             return True
-        if self._last_verb not in {"attack", "bs"}:
+        if self._last_verb not in {"attack", "att", "bash", "aa", "bs"}:
             return False
         return state.prompt_seq <= self._wait_prompt
 
@@ -1348,8 +1403,8 @@ class Brain:
         return bool(state.bleeding and not state.aided)
 
     def _can_sneak_here(self, state: WorldState) -> bool:
-        """`sn` only on an empty room. Combat, a lop, or a pending look blocks."""
-        if state.in_combat or self._lops_here(state):
+        """`sn` only on an empty room. Combat, a lop, a stranger, or a pending look blocks."""
+        if state.in_combat or self._lops_here(state) or self._strangers_here(state):
             return False
         if self._want_look or state.look_scan:
             return False
@@ -1471,23 +1526,8 @@ class Brain:
         return paths.step_toward_arena(state.room, state.exits) == "d"
 
     def _should_leave_to_sneak(self, state: WorldState) -> bool:
-        """Visible ambush in the pit with lops: go set `sn` on the road.
-
-        Just-arrived (`d`) or already in a fight: stay and swing. Hidden: `bs`.
-        """
-        if not self._own_ambush(state) or not self._in_pit(state):
-            return False
-        if not self._lops_here(state):
-            return False
-        if self._hidden or self._sneaking:
-            return False
-        if state.in_combat or self._attacking:
-            return False
-        if not self._healed(state):
-            return False
-        if self._pit_fight or self._last_step == "d":
-            return False
-        return True
+        """A listed lop is a fight. Do not walk off to sn first."""
+        return False
 
     def _setup_sneak(self, send, state: WorldState) -> bool:
         """One `sn` on an empty room. True if we acted.
@@ -1577,7 +1617,7 @@ class Brain:
 
     def _cmd(self, send, text: str, state: WorldState) -> None:
         verb, sep, rest = text.partition(" ")
-        if sep and verb.lower() in {"attack", "bs"} and rest:
+        if sep and verb.lower() in {"attack", "att", "bash", "aa", "bs"} and rest:
             aim = self._swing_name(rest)
             if not aim:
                 return
@@ -1973,8 +2013,13 @@ class Brain:
         self.gear_done = True
         self.mode = "hunt"
         self.next_action = "hunt"
+        self._await_inv = False
+        self._pry_sent = False
 
     def _gear(self, state: WorldState, send) -> None:
+        if self._listed_fight(state):
+            self._done_gear()
+            return
         if state.blocked:
             state.blocked = False
             self._last_step = ""
@@ -2383,7 +2428,7 @@ class Brain:
         """True when a paced `at` / `bs` is aimed at a mob that just died."""
         if not pending or not aim:
             return False
-        if verb not in {"attack", "bs", "at"}:
+        if verb not in {"attack", "att", "bash", "aa", "bs", "at"}:
             return False
         if dead and paths.same_mob(aim, dead):
             return True
@@ -2537,14 +2582,16 @@ class Brain:
     def _hunt(self, state: WorldState, send) -> None:
         if paths.is_dangerous(state.room):
             self._in_camp = True
-        if self._run_ambush_boot(state, send):
-            return
         if state.dark:
             self._cmd(send, f"use {paths.STARTER_LIGHT}", state)
             return
+        if self._swing_first(state, send):
+            return
+        if self._run_ambush_boot(state, send):
+            return
         if self._ask_health(state, send):
             return
-        if self._holding_sneak(state):
+        if self._holding_sneak(state) and not self._lops_here(state):
             self.next_action = "ambush"
             return
         if self._party(state, send):
@@ -2597,7 +2644,7 @@ class Brain:
                 return
             self._attacking = aim.lower()
             state.in_combat = True
-            self._cmd(send, f"attack {aim}", state)
+            self._cmd(send, f"{self._swing_verb(state)} {aim}", state)
             return
         if (state.in_combat or self._attacking) and (
             self._in_pit(state) or self._lops_here(state)
