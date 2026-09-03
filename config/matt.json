@@ -1,0 +1,12 @@
+{
+  "username": "matt",
+  "password": "matt",
+  "given": "Matt",
+  "party_leader": "Matt",
+  "class": "paladin",
+  "aa": true,
+  "spells": ["minor healing", "harm", "bless"],
+  "auto_login": true,
+  "auto_play": true,
+  "pvp": false
+}

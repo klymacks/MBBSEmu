@@ -1,0 +1,14 @@
+{
+  "username": "klymacks",
+  "password": "klymacks1",
+  "given": "Klymacks",
+  "party_leader": "Matt",
+  "auto_join": true,
+  "rank": "back",
+  "class": "ninja",
+  "ambush": "stand",
+  "spells": [],
+  "auto_login": true,
+  "auto_play": true,
+  "pvp": false
+}

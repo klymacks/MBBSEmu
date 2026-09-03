@@ -1,0 +1,176 @@
+#!/usr/bin/env bash
+# Finn's Realm — one executable: start the board if needed, open the play window.
+# Works from a packaged dist/finns-realm/ folder or from this repo's scripts/.
+set -euo pipefail
+
+HERE="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+
+if [[ -x "$HERE/bin/MBBSEmu" ]]; then
+  ROOT="$HERE"
+  EMU="$HERE/bin/MBBSEmu"
+elif [[ -x "$HERE/../MBBSEmu/bin/Release/net10.0/MBBSEmu" ]]; then
+  ROOT="$(cd "$HERE/.." && pwd)"
+  EMU="$ROOT/MBBSEmu/bin/Release/net10.0/MBBSEmu"
+elif [[ -x "$HERE/../vendor/mbbsemu/MBBSEmu" ]]; then
+  ROOT="$(cd "$HERE/.." && pwd)"
+  EMU="$ROOT/vendor/mbbsemu/MBBSEmu"
+else
+  echo "Finn's Realm: MBBSEmu is not in this folder."
+  echo "Run ./scripts/package-finns-realm.sh from the repo, then use dist/finns-realm/FinnsRealm."
+  read -rp "Enter to close" || true
+  exit 1
+fi
+
+CONFIG="$ROOT/config"
+DATA="$ROOT/data"
+CLIENT="$ROOT/scripts/bbs_client.py"
+SETTINGS="$CONFIG/appsettings.json"
+MODULES="$DATA/modules.json"
+LOG="$DATA/mbbsemu.log"
+PID_FILE="$DATA/mbbsemu.pid"
+PORT="${TELNET_PORT:-2323}"
+SYSOP_PASSWORD="${SYSOP_PASSWORD:-sysop}"
+
+mkdir -p "$DATA" "$CONFIG"
+
+write_modules_json() {
+  cat > "$MODULES" <<EOF
+{
+  "Modules": [
+    {
+      "Identifier": "WCCMMUD",
+      "Path": "$ROOT/modules/WCCMMUD/",
+      "MenuOptionKey": "M",
+      "Enabled": 1
+    }
+  ]
+}
+EOF
+}
+
+# Packaged copies must rewrite Path from this folder. The live repo
+# keeps whatever is already in data/modules.json.
+if [[ -x "$HERE/bin/MBBSEmu" ]] || [[ ! -f "$MODULES" ]]; then
+  write_modules_json
+fi
+
+port_up() {
+  python3 -c "import socket; s=socket.socket(); s.settimeout(0.4); s.connect(('127.0.0.1', $PORT)); s.close()" 2>/dev/null
+}
+
+if [[ ! -x "$EMU" ]]; then
+  echo "MBBSEmu missing: $EMU"
+  read -rp "Enter to close" || true
+  exit 1
+fi
+if [[ ! -f "$SETTINGS" ]]; then
+  echo "Missing $SETTINGS"
+  read -rp "Enter to close" || true
+  exit 1
+fi
+if [[ ! -f "$CLIENT" ]]; then
+  echo "Missing $CLIENT"
+  read -rp "Enter to close" || true
+  exit 1
+fi
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "python3 is required for the play window."
+  read -rp "Enter to close" || true
+  exit 1
+fi
+if ! python3 -c "import tkinter" >/dev/null 2>&1; then
+  echo "python3 tkinter is required (Debian/Ubuntu: sudo apt install python3-tk)."
+  read -rp "Enter to close" || true
+  exit 1
+fi
+
+if ! port_up; then
+  PREFLIGHT="$ROOT/scripts/preflight.py"
+  if [[ "${FINNS_PREFLIGHT:-1}" != 0 && -f "$PREFLIGHT" ]]; then
+    echo "Preflight..."
+    set +e
+    python3 "$PREFLIGHT" "$ROOT"
+    pf=$?
+    set -e
+    if [[ "$pf" -eq 1 ]]; then
+      echo
+      echo "Board not started. Read $ROOT/scripts/PREFLIGHT.md"
+      echo "Clean slate: ./scripts/reset-game.sh"
+      read -rp "Enter to close" || true
+      exit 1
+    fi
+  fi
+  echo "Starting Finn's Realm..."
+  cd "$DATA"
+  DBR=(-DBREBUILD BBSUSR)
+  if [[ ! -f mbbsemu.db ]]; then
+    DBR=(-DBRESET "$SYSOP_PASSWORD")
+  fi
+  setsid "$EMU" -CLI -S "$SETTINGS" -C "$MODULES" "${DBR[@]}" >>"$LOG" 2>&1 &
+  echo $! >"$PID_FILE"
+  ok=0
+  for _ in $(seq 1 45); do
+    if port_up; then
+      ok=1
+      break
+    fi
+    sleep 1
+  done
+  if [[ "$ok" != 1 ]]; then
+    echo "Board did not come up on port $PORT. Last log lines:"
+    tail -n 40 "$LOG" 2>/dev/null || true
+    read -rp "Enter to close" || true
+    exit 1
+  fi
+  if [[ -f "$ROOT/scripts/record-boot.py" ]]; then
+    python3 "$ROOT/scripts/record-boot.py" "$ROOT" || true
+  fi
+fi
+
+export DISPLAY="${DISPLAY:-:0}"
+title="Finn's Realm"
+wmclass="FinnsRealm"
+if [[ " $* " == *" --matt "* ]]; then
+  title="Finn's Realm — Matt"
+  wmclass="FinnsRealmMatt"
+elif [[ " $* " == *" --sysop "* ]]; then
+  title="Finn's Realm — klymacks"
+  wmclass="FinnsRealmKlymacks"
+else
+  title="Finn's Realm — klymacks"
+  wmclass="FinnsRealmKlymacks"
+fi
+
+client=(python3 "$CLIENT" 127.0.0.1 "$PORT" "$@")
+
+# 80x30: 25-line MajorMUD screen + 5-line HP/MA footer.
+# Px IBM VGA8 is the 8×16 DOS face. Generic "monospace" looks modern/sterile.
+face='monospace'
+size=16
+if fc-list 'Px IBM VGA8' family 2>/dev/null | grep -q 'Px IBM VGA8'; then
+  face='Px IBM VGA8'
+  size=18
+fi
+if [[ -x /usr/bin/xterm ]]; then
+  exec xterm +aw +sb \
+    -class "$wmclass" \
+    -geometry 80x30 \
+    -bg '#0b0e0c' -fg '#c8d2c8' -cr '#3dff9a' \
+    -fa "$face" -fs "$size" \
+    -b 12 \
+    -title "$title" \
+    -n "$title" \
+    -xrm 'XTerm*scrollBar: false' \
+    -xrm 'XTerm*selectToClipboard: true' \
+    -xrm 'XTerm*cursorBlink: true' \
+    -xrm 'XTerm*cursorOnTime: 480' \
+    -xrm 'XTerm*cursorOffTime: 280' \
+    -xrm 'XTerm*XftAntialias: false' \
+    -xrm 'XTerm.VT100.translations: #override <Key>F11: string(0x1b) string("[23~")' \
+    -e "${client[@]}"
+fi
+if command -v konsole >/dev/null 2>&1; then
+  exec konsole --hide-menubar --hide-tabbar --geometry 720x640 \
+    --title "$title" --name "$wmclass" -e "${client[@]}"
+fi
+exec "${client[@]}"
