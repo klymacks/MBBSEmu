@@ -2,6 +2,15 @@
 # Double-click Check Finn's Realm, or: ./scripts/check-board.sh
 set -euo pipefail
 HERE="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+
+# A packaged copy sitting inside this repo is not a second board.
+if [[ "$HERE" == */dist/finns-realm ]]; then
+  _live="$(cd "$HERE/../.." && pwd)"
+  if [[ -f "$_live/modules/WCCMMUD/WCCMMUD.DLL" && -d "$_live/scripts" ]]; then
+    HERE="$_live/scripts"
+  fi
+fi
+
 if [[ -d "$HERE/../modules/WCCMMUD" ]]; then
   ROOT="$(cd "$HERE/.." && pwd)"
 elif [[ -d "$HERE/modules/WCCMMUD" ]]; then

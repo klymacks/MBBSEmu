@@ -5,6 +5,14 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 
+# A packaged copy sitting inside this repo is not a second board.
+if [[ "$HERE" == */dist/finns-realm ]]; then
+  _live="$(cd "$HERE/../.." && pwd)"
+  if [[ -f "$_live/modules/WCCMMUD/WCCMMUD.DLL" && -d "$_live/scripts" ]]; then
+    HERE="$_live/scripts"
+  fi
+fi
+
 if [[ -x "$HERE/bin/MBBSEmu" ]]; then
   ROOT="$HERE"
   EMU="$HERE/bin/MBBSEmu"
@@ -166,7 +174,7 @@ if [[ -x /usr/bin/xterm ]]; then
     -xrm 'XTerm*cursorOnTime: 480' \
     -xrm 'XTerm*cursorOffTime: 280' \
     -xrm 'XTerm*XftAntialias: false' \
-    -xrm 'XTerm.VT100.translations: #override <Key>F11: string(0x1b) string("[23~")' \
+    -xrm 'XTerm.VT100.translations: #override <Key>F11: string(0x1b) string("[23~")\\n<Key>F12: string(0x1b) string("[24~")' \
     -e "${client[@]}"
 fi
 if command -v konsole >/dev/null 2>&1; then

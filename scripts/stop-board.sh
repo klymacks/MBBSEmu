@@ -5,6 +5,14 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 
+# A packaged copy sitting inside this repo is not a second board.
+if [[ "$HERE" == */dist/finns-realm ]]; then
+  _live="$(cd "$HERE/../.." && pwd)"
+  if [[ -f "$_live/modules/WCCMMUD/WCCMMUD.DLL" && -d "$_live/scripts" ]]; then
+    HERE="$_live/scripts"
+  fi
+fi
+
 if [[ -x "$HERE/bin/MBBSEmu" ]]; then
   ROOT="$HERE"
 elif [[ -d "$HERE/../data" ]]; then

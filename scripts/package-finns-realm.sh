@@ -102,7 +102,14 @@ rsync -a \
   --exclude 'MBBSEmu/' \
   --exclude '.git/' \
   --exclude '*.bak' \
+  --exclude '*.saved' \
+  --exclude 'WCCADDON.SYS' \
+  --exclude 'WCCMMUD.MCV' \
+  --exclude 'WCCMMPLS.MCV' \
   "$ROOT/modules/WCCMMUD/" "$DEST/modules/WCCMMUD/"
+# shellcheck source=common.sh
+source "$ROOT/scripts/common.sh"
+wipe_license_leftovers "$DEST/modules/WCCMMUD" "$DEST/data"
 
 if [[ -f "$ROOT/data/mbbsemu.db" ]]; then
   cp -a "$ROOT/data/mbbsemu.db" "$DEST/data/"
@@ -179,6 +186,20 @@ StartupNotify=true
 EOF
 chmod +x "$DEST/Stop Finn's Realm.desktop"
 
+cat > "$DEST/Check Finn's Realm.desktop" <<EOF
+[Desktop Entry]
+Type=Application
+Name=Check Finn's Realm
+Comment=Preflight: activation, addons, module files
+Exec=$DEST/FinnsRealm-check
+Path=$DEST
+Icon=$DEST/share/finns-realm.png
+Terminal=true
+Categories=Game;
+StartupNotify=true
+EOF
+chmod +x "$DEST/Check Finn's Realm.desktop"
+
 echo "Packaged: $DEST"
 echo "Launch with: $DEST/FinnsRealm"
 
@@ -187,65 +208,59 @@ echo "Launch with: $DEST/FinnsRealm"
 echo "Archive: $ROOT/dist/finns-realm.tar.gz"
 
 if [[ "$INSTALL" == 1 ]]; then
+  # This machine's live board is the repo, not the packaged snapshot.
   mkdir -p "$HOME/.local/share/applications"
-  DESK="$HOME/Desktop/Finn's Realm.desktop"
-  cp -a "$DEST/Finn's Realm.desktop" "$DESK"
-  chmod +x "$DESK"
-  gio set "$DESK" metadata::trusted true 2>/dev/null || true
-  cp -a "$DEST/Finn's Realm.desktop" "$HOME/.local/share/applications/finns-realm.desktop"
-  echo "Desktop shortcut: $DESK"
-
-  REBOOT_DESK="$HOME/Desktop/Reboot Finn's Realm.desktop"
-  cat > "$REBOOT_DESK" <<EOF
+  ICON="$ROOT/config/finns-realm.png"
+  [[ -f "$ICON" ]] || ICON="$DEST/share/finns-realm.png"
+  install_desk() {
+    local dest="$1" name="$2" comment="$3" exec_line="$4" terminal="$5" wmclass="$6"
+    cat > "$dest" <<EOF
 [Desktop Entry]
 Type=Application
-Name=Reboot Finn's Realm
-Comment=Stop and restart the Finn's Realm board
-Exec=$ROOT/scripts/reboot-board.sh
+Name=$name
+Comment=$comment
+Exec=$exec_line
 Path=$ROOT
-Icon=$ROOT/config/finns-realm.png
-Terminal=true
+Icon=$ICON
+Terminal=$terminal
 Categories=Game;
 StartupNotify=true
 EOF
-  chmod +x "$REBOOT_DESK"
-  gio set "$REBOOT_DESK" metadata::trusted true 2>/dev/null || true
-  cp -a "$REBOOT_DESK" "$HOME/.local/share/applications/finns-realm-reboot.desktop"
-  echo "Desktop shortcut: $REBOOT_DESK"
+    if [[ -n "$wmclass" ]]; then
+      echo "StartupWMClass=$wmclass" >> "$dest"
+    fi
+    chmod +x "$dest"
+    gio set "$dest" metadata::trusted true 2>/dev/null || true
+  }
+  install_desk "$HOME/Desktop/Finn's Realm — klymacks.desktop" \
+    "Finn's Realm — klymacks" \
+    "MajorMUD on Finn's Realm — klymacks (sysop login)" \
+    "$ROOT/scripts/FinnsRealm --sysop" false FinnsRealmKlymacks
+  cp -a "$HOME/Desktop/Finn's Realm — klymacks.desktop" \
+    "$HOME/.local/share/applications/finns-realm.desktop"
+  echo "Desktop shortcut: $HOME/Desktop/Finn's Realm — klymacks.desktop"
 
-  STOP_DESK="$HOME/Desktop/Stop Finn's Realm.desktop"
-  cat > "$STOP_DESK" <<EOF
-[Desktop Entry]
-Type=Application
-Name=Stop Finn's Realm
-Comment=Shut down the Finn's Realm board
-Exec=$ROOT/scripts/stop-board.sh
-Path=$ROOT
-Icon=$ROOT/config/finns-realm.png
-Terminal=true
-Categories=Game;
-StartupNotify=true
-EOF
-  chmod +x "$STOP_DESK"
-  gio set "$STOP_DESK" metadata::trusted true 2>/dev/null || true
-  cp -a "$STOP_DESK" "$HOME/.local/share/applications/finns-realm-stop.desktop"
-  echo "Desktop shortcut: $STOP_DESK"
+  install_desk "$HOME/Desktop/Reboot Finn's Realm.desktop" \
+    "Reboot Finn's Realm" \
+    "Stop and restart the Finn's Realm board" \
+    "$ROOT/scripts/reboot-board.sh" true ""
+  cp -a "$HOME/Desktop/Reboot Finn's Realm.desktop" \
+    "$HOME/.local/share/applications/finns-realm-reboot.desktop"
+  echo "Desktop shortcut: $HOME/Desktop/Reboot Finn's Realm.desktop"
 
-  CHECK_DESK="$HOME/Desktop/Check Finn's Realm.desktop"
-  cat > "$CHECK_DESK" <<EOF
-[Desktop Entry]
-Type=Application
-Name=Check Finn's Realm
-Comment=Preflight: activation, addons, module files
-Exec=$ROOT/scripts/check-board.sh
-Path=$ROOT
-Icon=$ROOT/config/finns-realm.png
-Terminal=true
-Categories=Game;
-StartupNotify=true
-EOF
-  chmod +x "$CHECK_DESK"
-  gio set "$CHECK_DESK" metadata::trusted true 2>/dev/null || true
-  cp -a "$CHECK_DESK" "$HOME/.local/share/applications/finns-realm-check.desktop"
-  echo "Desktop shortcut: $CHECK_DESK"
+  install_desk "$HOME/Desktop/Stop Finn's Realm.desktop" \
+    "Stop Finn's Realm" \
+    "Shut down the Finn's Realm board" \
+    "$ROOT/scripts/stop-board.sh" true ""
+  cp -a "$HOME/Desktop/Stop Finn's Realm.desktop" \
+    "$HOME/.local/share/applications/finns-realm-stop.desktop"
+  echo "Desktop shortcut: $HOME/Desktop/Stop Finn's Realm.desktop"
+
+  install_desk "$HOME/Desktop/Check Finn's Realm.desktop" \
+    "Check Finn's Realm" \
+    "Preflight: activation, addons, module files" \
+    "$ROOT/scripts/check-board.sh" true ""
+  cp -a "$HOME/Desktop/Check Finn's Realm.desktop" \
+    "$HOME/.local/share/applications/finns-realm-check.desktop"
+  echo "Desktop shortcut: $HOME/Desktop/Check Finn's Realm.desktop"
 fi

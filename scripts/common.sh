@@ -62,3 +62,44 @@ emulator_running() {
   fi
   return 1
 }
+
+# Compiled MCV and "save for later" files are how rejected Plus/Mud tokens
+# (and addon lists) keep coming back after MSG is restored to DEMO.
+wipe_license_leftovers() {
+  local module="${1:-$MODULE_DIR}"
+  local data="${2:-$DATA_DIR}"
+  rm -f \
+    "$data/activation-later.txt" \
+    "$data/wccaddon.sys.saved" \
+    "$module/WCCADDON.SYS" \
+    "$module/WCCADDON.SYS.saved" \
+    "$module/wccaddon.sys.saved" \
+    "$module/WCCMMUD.MCV" \
+    "$module/WCCMMPLS.MCV"
+}
+
+# Live toons live in these files. A packaged WCCUSERS.DB is a ghost:
+# given names stay reserved, but the BBS login is often gone.
+wipe_player_records() {
+  local module="${1:-$MODULE_DIR}"
+  local data="${2:-$DATA_DIR}"
+  local base
+  shopt -s nullglob
+  for base in WCCUSERS WCCGANGS WCCBANKS; do
+    if [[ -f "$module/${base}.VIR" ]]; then
+      cp -a "$module/${base}.VIR" "$module/${base}.DAT"
+    fi
+    rm -f "$module/${base}.DB" "$module/${base}.db"
+  done
+  rm -f "$module/WCCRECOV.FLG"
+  rm -rf "$data/finn-saves"
+}
+
+# sysop comes from -DBRESET. matt must exist so --matt can create a toon.
+ensure_play_accounts() {
+  local db="${1:-$DATA_DIR/mbbsemu.db}"
+  local create="$ROOT/scripts/create_user.py"
+  [[ -f "$db" && -f "$create" ]] || return 0
+  python3 "$create" --username matt --password matt \
+    --keys NORMAL --keys PAYING --keys USER --dbfile "$db" || true
+}

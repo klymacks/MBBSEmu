@@ -42,27 +42,9 @@ rm -f "$PID_FILE"
 port_up && { echo "Port $PORT still in use."; exit 1; }
 
 mkdir -p "$DATA"
-python3 - "$MODULE" "$DATA/activation-later.txt" <<'PY'
-from pathlib import Path
-import re, sys
-mod = Path(sys.argv[1])
-out = Path(sys.argv[2])
-def act(p):
-    m = re.search(r'ACTIVATE \{([^}]*)\}', p.read_text(errors='replace'))
-    return m.group(1) if m else '(none)'
-addon = (mod / 'WCCADDON.SYS').read_text(errors='replace').strip()
-saved = (Path(sys.argv[2]).parent / 'wccaddon.sys.saved')
-if saved.exists() and not addon:
-    addon = saved.read_text(errors='replace').strip()
-out.write_text(
-    "Put these in LAST, after DEMO is playing and C/CP are done.\n\n"
-    f"MajorMUD ACTIVATE: {act(mod / 'WCCMMUD.MSG')}\n"
-    f"MajorMUD Plus ACTIVATE: {act(mod / 'WCCMMPLS.MSG')}\n\n"
-    "Addon codes (WCCADDON.SYS), one per line:\n"
-    f"{addon or '(none saved)'}\n"
-)
-print(f"Saved codes for later: {out}")
-PY
+# shellcheck source=common.sh
+source "$ROOT/scripts/common.sh"
+wipe_license_leftovers "$MODULE" "$DATA"
 
 echo "Restoring DEMO activation..."
 cp -a "$MODULE/WCCMMUD.MSG.original" "$MODULE/WCCMMUD.MSG"
@@ -77,7 +59,6 @@ if n != 1:
 p.write_text(text2)
 print('Plus ACTIVATE -> DEMO')
 PY
-rm -f "$MODULE/WCCADDON.SYS"
 
 echo "Restoring virgin game databases..."
 shopt -s nullglob
@@ -86,7 +67,9 @@ for vir in "$MODULE"/*.VIR; do
   cp -a "$vir" "$MODULE/${base}.DAT"
   rm -f "$MODULE/${base}.DB"
 done
-rm -f "$MODULE/WCCRECOV.FLG"
+wipe_player_records "$MODULE" "$DATA"
+echo "Play accounts: sysop plus matt (empty toons — you create them)."
+ensure_play_accounts "$DATA/mbbsemu.db"
 
 echo "Starting the board..."
 cd "$DATA"
@@ -203,7 +186,7 @@ echo
 grep -aE 'DEMO MODE|users\]|Module Added|CNF options' "$LOG" | tail -8
 echo
 echo "Board is up in DEMO. Do not enter activation codes yet."
-echo "Play first. Codes to paste later: $DATA/activation-later.txt"
+echo "This reset does not keep leftover Plus/Mud/addon tokens."
 if [[ -f "$ROOT/scripts/preflight.py" ]]; then
   echo
   python3 "$ROOT/scripts/preflight.py" "$ROOT" || true

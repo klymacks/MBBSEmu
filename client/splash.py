@@ -43,6 +43,14 @@ def _tdf_dir() -> Path:
     raise FileNotFoundError("shard font files missing under client/tdf")
 
 
+def tdf_path(name: str) -> Path:
+    for folder in (HERE / "tdf", HERE / "splash-previews" / "tdf"):
+        path = folder / name
+        if path.is_file():
+            return path
+    raise FileNotFoundError(f"TheDraw font missing: {name}")
+
+
 def load_color_tdf(path: Path) -> ColorFont:
     data = path.read_bytes()
     if data[:19] != MAGIC:

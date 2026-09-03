@@ -56,6 +56,12 @@ BAD_ACTIVATE = {
     "YES",
     "TRUE",
 }
+# Tokens that were wrongly re-applied from leftover MCV / "later" files.
+# Always FAIL. Do not print them; do not treat them as a real Plus/Mud code.
+REJECTED_ACTIVATE = {
+    "AWCYYWATAY",
+    "UTAUIRUWHT",
+}
 ACTIVATE_RE = re.compile(r"ACTIVATE\s*\{([^}]*)\}", re.IGNORECASE)
 DUMMY_ADDON_RE = re.compile(r"^\s*(\d+)\s*:\s*(\d+)\s*$")
 LETTER_CODE_RE = re.compile(r"^[A-Za-z]{6,20}$")
@@ -156,6 +162,8 @@ def classify_activate(value: str | None, *, kind: str, stage: str) -> tuple[str,
     if value is None:
         return FAIL, "ACTIVATE line missing"
     token = value.upper()
+    if token in REJECTED_ACTIVATE:
+        return FAIL, "rejected leftover — restore DEMO (do not re-apply)"
     if token in BAD_ACTIVATE or token.isdigit() or ":" in token:
         return FAIL, f"crash-prone {{{value}}} — restore DEMO"
     if token == "DEMO":
@@ -185,6 +193,31 @@ def addon_status(path: Path, stage: str) -> tuple[str, str]:
     if stage != "addons":
         return FAIL, f"{len(lines)} addon code(s) — too early (stage {stage})"
     return WARN, f"{len(lines)} addon code(s) — reboot after each line"
+
+
+def leftover_stash_files() -> list[tuple[str, Path]]:
+    return [
+        ("activation-later.txt", DATA / "activation-later.txt"),
+        ("wccaddon.sys.saved", DATA / "wccaddon.sys.saved"),
+        ("WCCADDON.SYS.saved", MODULE / "WCCADDON.SYS.saved"),
+    ]
+
+
+def leftover_stash_status(path: Path) -> tuple[str, str]:
+    if not path.is_file():
+        return OK, "absent"
+    return FAIL, "leftover stash — delete; do not paste these back into MSG"
+
+
+def compiled_activate_status(path: Path, msg_token: str | None) -> tuple[str, str]:
+    if not path.is_file():
+        return OK, "absent (recompiles from MSG on boot)"
+    data = path.read_bytes()
+    if any(token.encode("ascii") in data for token in REJECTED_ACTIVATE):
+        return FAIL, "stale compiled leftover — delete this MCV"
+    if msg_token and msg_token.upper() == "DEMO" and b"DEMO" not in data:
+        return FAIL, "MCV does not match DEMO MSG — delete so it recompiles"
+    return OK, "matches MSG"
 
 
 def bturno() -> tuple[str, str]:
@@ -267,7 +300,7 @@ def last_boot_status() -> tuple[str, str]:
     if recovery:
         parts.append("recovered")
     note = ", ".join(parts)
-    if users == 0:
+    if users == 0 and not demo:
         return FAIL, f"{note} — revert MajorMUD to {{DEMO}} and reboot"
     if recovery:
         return WARN, note
@@ -339,6 +372,17 @@ def main() -> int:
 
     tone, note = addon_status(MODULE / "WCCADDON.SYS", stage)
     rows.append((tone, "WCCADDON.SYS", note, MODULE / "WCCADDON.SYS"))
+
+    for label, path in leftover_stash_files():
+        tone, note = leftover_stash_status(path)
+        rows.append((tone, label, note, path))
+
+    for label, path, token in (
+        ("WCCMMUD.MCV", MODULE / "WCCMMUD.MCV", mud),
+        ("WCCMMPLS.MCV", MODULE / "WCCMMPLS.MCV", plus),
+    ):
+        tone, note = compiled_activate_status(path, token)
+        rows.append((tone, label, note, path))
 
     tone, note = bturno()
     rows.append((tone, "GSBL.BTURNO", note, CONFIG / "appsettings.json"))

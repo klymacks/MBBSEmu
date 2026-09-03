@@ -5,6 +5,14 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 
+# A packaged copy sitting inside this repo is not a second board.
+if [[ "$HERE" == */dist/finns-realm ]]; then
+  _live="$(cd "$HERE/../.." && pwd)"
+  if [[ -f "$_live/modules/WCCMMUD/WCCMMUD.DLL" && -d "$_live/scripts" ]]; then
+    HERE="$_live/scripts"
+  fi
+fi
+
 if [[ -x "$HERE/bin/MBBSEmu" ]]; then
   ROOT="$HERE"
   EMU="$HERE/bin/MBBSEmu"
@@ -30,6 +38,25 @@ PORT="${TELNET_PORT:-2323}"
 SYSOP_PASSWORD="${SYSOP_PASSWORD:-sysop}"
 
 mkdir -p "$DATA" "$CONFIG"
+
+write_modules_json() {
+  cat > "$MODULES" <<EOF
+{
+  "Modules": [
+    {
+      "Identifier": "WCCMMUD",
+      "Path": "$ROOT/modules/WCCMMUD/",
+      "MenuOptionKey": "M",
+      "Enabled": 1
+    }
+  ]
+}
+EOF
+}
+
+if [[ ! -f "$MODULES" ]]; then
+  write_modules_json
+fi
 
 port_up() {
   python3 -c "import socket; s=socket.socket(); s.settimeout(0.4); s.connect(('127.0.0.1', $PORT)); s.close()" 2>/dev/null
@@ -111,10 +138,14 @@ if [[ ! -f "$SETTINGS" ]]; then
   read -rp "Enter to close" || true
   exit 1
 fi
-if [[ ! -f "$MODULES" ]]; then
-  echo "Missing $MODULES"
+if [[ ! -f "$ROOT/modules/WCCMMUD/WCCMMUD.DLL" ]]; then
+  echo "MajorMUD files missing from $ROOT/modules/WCCMMUD/"
+  echo "From the repo: ./scripts/restore-from-package.sh"
   read -rp "Enter to close" || true
   exit 1
+fi
+if [[ ! -f "$MODULES" ]]; then
+  write_modules_json
 fi
 
 PREFLIGHT="$ROOT/scripts/preflight.py"

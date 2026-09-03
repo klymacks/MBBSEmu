@@ -535,10 +535,10 @@ namespace MBBSEmu.HostProcess.HostRoutines
 
             var inputValue = Encoding.ASCII.GetString(session.InputBuffer.ToArray());
 
-            if (inputValue.Length <= 4 || inputValue.Length >= 10)
+            if (inputValue.Length < 4 || inputValue.Length > 9)
             {
                 session.SendToClient(
-                    "\r\n|RED||B|Passwords must be between 5 and 9 characters long.\r\n|RESET|"
+                    "\r\n|RED||B|Passwords must be between 4 and 9 characters long.\r\n|RESET|"
                         .EncodeToANSIArray());
                 session.SessionState = EnumSessionState.SignupPasswordDisplay;
                 session.InputBuffer.SetLength(0);

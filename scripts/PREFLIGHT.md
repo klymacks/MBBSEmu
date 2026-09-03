@@ -6,6 +6,8 @@ This is the gate. The launcher runs `scripts/preflight.py` before it starts the 
 
 Manual check: `./scripts/preflight.py`
 
+Desktop **Check / Reboot / Play** use this repo board (`data/` + `modules/WCCMMUD/`). The packaged `dist/finns-realm/` copy is a snapshot, not a second game.
+
 ---
 
 ## Stages (slow on purpose)
@@ -24,7 +26,7 @@ Preflight writes [finns-stage](../data/finns-stage). It auto-advances only as fa
 echo plus-demo > data/finns-stage
 ```
 
-Do not write that until DEMO play feels solid. Codes are in [activation-later.txt](../data/activation-later.txt).
+Do not write that until DEMO play feels solid. This tree does not store leftover Plus/Mud/addon tokens. Reset, package, and restore wipe those files so they cannot be pasted back.
 
 Each reboot records [last-boot.json](../data/last-boot.json) (`MajorMUD - N users`, DEMO, recovery). Preflight **FAIL**s a 0-seat last boot.
 
@@ -80,6 +82,8 @@ Play **M**, then **E**.
 | [WCCRECOV.FLG](../modules/WCCMMUD/WCCRECOV.FLG) | lockfile while the board is **up**. Stop/reboot delete it after the process dies. |
 
 `./scripts/reset-game.sh` wipes characters, restores DEMO, and removes `WCCADDON.SYS`.
+
+If live module files vanished, `./scripts/restore-from-package.sh` copies `dist/finns-realm` **except** player DBs, then wipes users/gangs/banks. Packaged `WCCUSERS` is a ghost (given names reserved, no login). Do not copy it.
 
 ---
 

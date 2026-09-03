@@ -32,6 +32,13 @@ def _main():
   passwordHashBytes=_make_password_hash(args.password, passwordSaltBytes)
 
   cur = conn.cursor()
+  cur.execute(
+    'SELECT accountId FROM Accounts WHERE userName=? COLLATE NOCASE',
+    (args.username,),
+  )
+  if cur.fetchone() is not None:
+    print(f"{args.username} already exists")
+    return
   t = (args.username, str(base64.b64encode(passwordHashBytes), encoding='utf-8'), str(base64.b64encode(passwordSaltBytes), encoding='utf-8'), args.email)
   cur.execute('INSERT INTO Accounts (userName, passwordHash, passwordSalt, email, createDate, updateDate) VALUES (?,?,?,?, datetime(\'now\'), datetime(\'now\'))', t)
   conn.commit()
