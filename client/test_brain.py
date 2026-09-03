@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import tempfile
 import time
+from pathlib import Path
 
+from . import gear as G
 from .brain import HEAL_ASK, HEAL_RATIO, Brain
 from .parse import harvest_screen, parse_events, parse_line
 from .paths import (
@@ -1441,6 +1444,7 @@ def test_party_empty_sns_occupied_bs() -> None:
 def test_matt_peels_attack_tack() -> None:
     """Matt must never send `attack tack giant rat` or `attack attack giant rat`."""
     assert attack_name("tack giant rat") == "giant rat"
+    assert attack_name("tt giant rat") == "giant rat"
     assert attack_name("ttack acid slime") == "acid slime"
     assert attack_name("attack giant rat") == "giant rat"
     assert attack_name("attacktack giant rat") == "giant rat"
@@ -1481,6 +1485,8 @@ def test_matt_peels_attack_tack() -> None:
 def test_klymacks_peels_attack_tack() -> None:
     """Ninja sends attack/bs {species}, never tack, never a flavor adjective."""
     assert attack_name("tack giant rat") == "giant rat"
+    assert attack_name("tt giant rat") == "giant rat"
+    assert attack_line("tt giant rat") == "att giant rat"
     assert attack_name("attack giant rat") == "giant rat"
     assert attack_name("attacktack giant rat") == "giant rat"
     assert attack_name("fat carrion beast") == "carrion beast"
@@ -3119,6 +3125,37 @@ def test_paladin_gear_buys_minor_healing_first() -> None:
     assert b.mode == "gear"
 
 
+def test_paladin_reads_held_scroll_not_missing_bless() -> None:
+    b, state = _matt_town_gear()
+    state.room = "Newhaven, Spell Shop"
+    state.exits = ["s"]
+    state.inventory = ["scroll of minor healing", "scroll of cause harm"]
+    state.extras = ["scroll of minor healing", "scroll of cause harm"]
+    b._spell_i = 2
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["read scroll of minor healing"]
+    assert "bless" not in sent[0]
+
+
+def test_hunt_reads_held_scroll_not_missing_bless() -> None:
+    b, state = _matt_bless()
+    state.blessed = True
+    state.inventory = ["scroll of minor healing", "scroll of cause harm"]
+    state.extras = ["scroll of minor healing", "scroll of cause harm"]
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["read scroll of minor healing"]
+    sent.clear()
+    state.prompt_seq += 1
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["read scroll of cause harm"]
+    sent.clear()
+    state.prompt_seq += 1
+    b.tick(state, sent.append, pending=False)
+    assert "bless" not in " ".join(sent)
+
+
 def test_paladin_gear_reads_scroll_already_in_i() -> None:
     b, state = _matt_town_gear()
     state.room = "Newhaven, Spell Shop"
@@ -3201,6 +3238,403 @@ def test_paladin_already_knows_spell_buys_harm() -> None:
     state.prompt_seq += 1
     b.tick(state, sent.append, pending=False)
     assert sent == ["buy scroll of cause harm"]
+
+
+def test_paladin_does_not_rebuy_after_read() -> None:
+    b, state = _matt_town_gear()
+    state.room = "Newhaven, Spell Shop"
+    state.exits = ["s"]
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["buy scroll of minor healing"]
+    sent.clear()
+    state.prompt_seq += 1
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["read scroll of minor healing"]
+    sent.clear()
+    state.apply({"kind": "learned"})
+    state.inventory = []
+    state.extras = []
+    state.prompt_seq += 1
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["buy scroll of cause harm"]
+    assert "minor healing" not in " ".join(sent)
+
+
+def test_paladin_skips_shop_for_memorized_spells() -> None:
+    b, state = _matt_town_gear()
+    b._remember("minor healing")
+    b._remember("harm")
+    b._remember("bless")
+    state.room = "Newhaven, Spell Shop"
+    state.exits = ["s"]
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["s"]
+    assert not any(cmd.startswith("buy") for cmd in sent)
+
+
+def test_paladin_cast_marks_known_no_rebuy() -> None:
+    b, state = _matt_bless()
+    state.inventory = []
+    state.extras = []
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["cast bless"]
+    assert b._knows("bless")
+    b.mode = "gear"
+    b._looked = True
+    b._armour_i = len(ARMOUR_ITEMS)
+    b._weapon_worn = True
+    b._torch_bought = True
+    b._spells_shopped = False
+    b._spell_i = 2
+    state.room = "Newhaven, Spell Shop"
+    state.exits = ["s"]
+    state.blessed = True
+    sent.clear()
+    state.prompt_seq += 1
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["s"]
+    assert not any("bless" in cmd and cmd.startswith("buy") for cmd in sent)
+
+
+def test_due_spells_follow_level() -> None:
+    from . import spells as S
+
+    assert S.due_to_learn("paladin", None, 1, set()) == ["minor healing", "harm"]
+    assert S.next_due("paladin", None, 2, {"minor healing", "harm"}) == "bless"
+    assert S.next_due("paladin", None, 7, {"minor healing", "harm", "bless"}) == ""
+    assert S.next_due("paladin", None, 8, {"minor healing", "harm", "bless"}) == (
+        "major healing"
+    )
+
+
+def test_spell_offer_after_train() -> None:
+    b, state = _matt_bless()
+    b._memorized = {"minor healing", "harm"}
+    b._seen_level = 1
+    state.level = 2
+    state.blessed = True
+    state.apply({"kind": "trained", "level": 2})
+    state.room = "Newhaven, Guild"
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert b.spell_offer() == "bless"
+    assert not any(cmd in {"s", "n", "e", "w"} for cmd in sent)
+
+
+def test_spell_offer_yes_walks_from_guild() -> None:
+    b, state = _matt_bless()
+    b.mode = "manual"
+    b._memorized.clear()
+    state.level = 2
+    state.room = "Newhaven, Guild"
+    state.exits = ["s"]
+    b._spell_offer = "bless"
+    b._spell_offer_at = 2
+    sent: list[str] = []
+    assert b.answer_spell_offer(True, state) == "get bless"
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["s"]
+    sent.clear()
+    state.room = "Newhaven, Narrow Road"
+    state.exits = ["n", "e", "w", "d"]
+    state.prompt_seq += 1
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["e"]
+    sent.clear()
+    state.room = "Newhaven, Narrow Path"
+    state.exits = ["n", "s", "e", "w"]
+    state.prompt_seq += 1
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["n"]
+    sent.clear()
+    state.room = "Newhaven, Spell Shop"
+    state.exits = ["s"]
+    state.prompt_seq += 1
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["buy scroll of bless"]
+    sent.clear()
+    state.prompt_seq += 1
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["read scroll of bless"]
+    sent.clear()
+    state.apply({"kind": "learned"})
+    state.prompt_seq += 1
+    b.tick(state, sent.append, pending=False)
+    assert b.mode == "manual"
+    assert not b._want_spell
+    assert b._knows("bless")
+    assert not any(cmd.startswith("buy") for cmd in sent)
+
+
+def test_spell_offer_no_stays_put() -> None:
+    b, state = _matt_bless()
+    b.mode = "manual"
+    state.level = 2
+    state.room = "Newhaven, Guild"
+    state.exits = ["s"]
+    b._spell_offer = "bless"
+    b._spell_offer_at = 2
+    assert b.answer_spell_offer(False, state) == "skip bless"
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert sent == []
+    assert b.mode == "manual"
+    assert not b._want_spell
+
+
+def test_class_weapons_name_the_uniques() -> None:
+    assert G.class_weapon("ninja") == "ebony ninjato"
+    assert G.class_weapon("paladin") == "shimmering greatsword"
+    assert G.next_due("ninja", 9, [], set()) is None
+    quest = G.next_due("ninja", 10, [], set())
+    assert quest is not None
+    assert quest.name == "ebony ninjato"
+    assert G.next_due("ninja", 10, ["ebony ninjato"], set()) is None
+    assert G.next_due("ninja", 10, [], {G.CLASS_WEAPON_KEY}) is None
+    assert len(G.offer_tip(10, "ebony ninjato", "ninja")) <= 80
+    assert len(G.quest_tip("paladin", "shimmering greatsword")) <= 80
+
+
+def test_gear_offer_after_train() -> None:
+    b = Brain(allowed=True, klass="ninja", me="klymacks")
+    b.mode = "manual"
+    b._seen_level = 9
+    state = WorldState()
+    state.in_realm = True
+    state.level = 10
+    state.apply({"kind": "trained", "level": 10})
+    state.room = "Newhaven, Guild"
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert b.gear_offer() == "ebony ninjato"
+    assert b.spell_offer() == ""
+    assert not any(cmd in {"s", "n", "e", "w"} for cmd in sent)
+    tip = b.offer_tip(state.level)
+    assert "ebony ninjato" in tip
+    assert "y/n" in tip
+    assert len(tip) <= 80
+
+
+def test_gear_offer_yes_walks_skiff_from_guild() -> None:
+    b = Brain(allowed=True, klass="ninja", me="klymacks")
+    b.mode = "manual"
+    state = WorldState()
+    state.in_realm = True
+    state.level = 10
+    state.room = "Newhaven, Guild"
+    state.exits = ["s"]
+    b._gear_offer = "ebony ninjato"
+    b._gear_offer_key = "class-weapon"
+    b._gear_offer_at = 10
+    assert b.answer_gear_offer(True, state) == "get ebony ninjato"
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["s"]
+    assert b._want_gear == "ebony ninjato"
+    hint = b.offer_tip(state.level)
+    assert "ebony ninjato" in hint
+    assert "skiff" in hint
+    assert "y/n" not in hint
+    sent.clear()
+    state.room = "Newhaven, Narrow Road"
+    state.exits = ["n", "e", "w", "d"]
+    state.prompt_seq += 1
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["e"]
+    sent.clear()
+    state.room = "Newhaven, Narrow Path"
+    state.exits = ["n", "s", "e", "w"]
+    state.prompt_seq += 1
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["e"]
+    sent.clear()
+    state.room = "Newhaven, Village Entrance"
+    state.exits = ["n", "s", "w", "se"]
+    state.prompt_seq += 1
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["se"]
+    sent.clear()
+    state.room = "Newhaven, Forest Path"
+    state.exits = ["nw", "s"]
+    state.prompt_seq += 1
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["s"]
+    sent.clear()
+    state.room = "Newhaven, Docks"
+    state.exits = ["n"]
+    state.prompt_seq += 1
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["borrow skiff"]
+
+
+def test_gear_offer_yes_stops_at_town_square() -> None:
+    b = Brain(allowed=True, klass="ninja", me="klymacks")
+    b.mode = "manual"
+    b._want_gear = "ebony ninjato"
+    state = WorldState()
+    state.in_realm = True
+    state.level = 10
+    state.room = "Town Square"
+    state.exits = ["n", "s", "e", "w"]
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert sent == []
+    assert b.mode == "manual"
+    assert b._want_gear == "ebony ninjato"
+    assert "crypt" in b.offer_tip(state.level)
+
+
+def test_gear_offer_yes_keeps_hunting() -> None:
+    b = Brain(allowed=True, klass="ninja", me="klymacks")
+    b.mode = "hunt"
+    b.gear_done = True
+    b._in_camp = True
+    state = WorldState()
+    state.in_realm = True
+    state.hp = 28
+    state.max_hp = 28
+    state.max_hp_known = True
+    state.level = 10
+    state.room = "Newhaven, Arena"
+    state.scanned = True
+    state.mobs = []
+    b._gear_offer = "ebony ninjato"
+    b._gear_offer_key = "class-weapon"
+    b._gear_offer_at = 10
+    assert b.answer_gear_offer(True, state) == "get ebony ninjato"
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert b.mode == "hunt"
+    assert b._want_gear == "ebony ninjato"
+    assert sent == ["u"]
+    assert "skiff" in b.offer_tip(state.level)
+
+
+def test_gear_offer_no_stays_put() -> None:
+    b = Brain(allowed=True, klass="ninja", me="klymacks")
+    b.mode = "manual"
+    state = WorldState()
+    state.in_realm = True
+    state.level = 10
+    state.room = "Newhaven, Guild"
+    state.exits = ["s"]
+    b._gear_offer = "ebony ninjato"
+    b._gear_offer_key = "class-weapon"
+    b._gear_offer_at = 10
+    assert b.answer_gear_offer(False, state) == "skip ebony ninjato"
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert sent == []
+    assert b.mode == "manual"
+    assert not b._want_gear
+    assert not b.gear_offer()
+
+
+def test_gear_offer_skipped_if_holding_weapon() -> None:
+    b = Brain(allowed=True, klass="ninja", me="klymacks")
+    b.mode = "manual"
+    b._seen_level = 9
+    state = WorldState()
+    state.in_realm = True
+    state.level = 10
+    state.worn = ["ebony ninjato"]
+    state.apply({"kind": "trained", "level": 10})
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert b.gear_offer() == ""
+    assert "class-weapon" in b._claimed
+
+
+def test_silvermere_square_drops_manhole() -> None:
+    b = Brain(allowed=True, klass="paladin")
+    b.gear_done = True
+    b.mode = "hunt"
+    b._in_camp = True
+    b._asked_health = True
+    state = WorldState()
+    state.in_realm = True
+    state.hp = 28
+    state.max_hp = 28
+    state.max_hp_known = True
+    state.prompt_seq = 410
+    state.room = "Town Square"
+    state.exits = ["n", "s", "e", "w"]
+    state.scanned = True
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["go manhole"]
+
+
+def test_silvermere_docks_walks_to_square() -> None:
+    b = Brain(allowed=True, klass="paladin")
+    b.gear_done = True
+    b.mode = "hunt"
+    b._in_camp = True
+    b._asked_health = True
+    state = WorldState()
+    state.in_realm = True
+    state.hp = 28
+    state.max_hp = 28
+    state.max_hp_known = True
+    state.prompt_seq = 420
+    state.room = "Docks"
+    state.exits = ["e", "n", "s"]
+    state.scanned = True
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert sent == ["e"]
+
+
+def test_gear_offer_beats_spell_at_ten() -> None:
+    b, state = _matt_bless()
+    b.mode = "manual"
+    b._memorized = {"minor healing", "harm", "bless"}
+    b._seen_level = 9
+    state.level = 10
+    state.blessed = True
+    state.apply({"kind": "trained", "level": 10})
+    state.room = "Newhaven, Guild"
+    sent: list[str] = []
+    b.tick(state, sent.append, pending=False)
+    assert b.gear_offer() == "shimmering greatsword"
+    assert b.spell_offer() == ""
+
+
+def test_learned_file_skips_known_scrolls() -> None:
+    with tempfile.TemporaryDirectory() as raw:
+        path = Path(raw) / "learned-spells.json"
+        path.write_text(
+            '{"matt": ["minor healing", "harm", "bless"]}\n',
+            encoding="utf-8",
+        )
+        b = Brain(
+            allowed=True,
+            me="matt Matt",
+            klass="paladin",
+            spell_list=["minor healing", "harm", "bless"],
+            learned_path=str(path),
+        )
+        assert b._spells_shopped
+        assert b._knows("bless")
+        b.mode = "gear"
+        b._looked = True
+        b._armour_i = len(ARMOUR_ITEMS)
+        b._weapon_worn = True
+        b._torch_bought = True
+        state = WorldState()
+        state.in_realm = True
+        state.hp = 22
+        state.max_hp = 22
+        state.room = "Newhaven, Spell Shop"
+        state.exits = ["s"]
+        state.prompt_seq = 9
+        sent: list[str] = []
+        b.tick(state, sent.append, pending=False)
+        assert sent == ["s"]
+        assert not any(cmd.startswith("buy") for cmd in sent)
 
 
 def test_ninja_gear_skips_spell_shop() -> None:
@@ -6256,12 +6690,32 @@ if __name__ == "__main__":
     test_paladin_gear_village_walks_west_for_spells()
     test_paladin_gear_path_walks_north_to_spell_shop()
     test_paladin_gear_buys_minor_healing_first()
+    test_paladin_reads_held_scroll_not_missing_bless()
+    test_hunt_reads_held_scroll_not_missing_bless()
     test_paladin_gear_reads_scroll_already_in_i()
     test_paladin_geared_still_gets_spells()
     test_paladin_spell_vague_retries_short_name()
     test_paladin_skips_buy_when_i_lists_known_spells()
     test_paladin_still_buys_bless_scroll_at_level_1()
     test_paladin_already_knows_spell_buys_harm()
+    test_paladin_does_not_rebuy_after_read()
+    test_paladin_skips_shop_for_memorized_spells()
+    test_paladin_cast_marks_known_no_rebuy()
+    test_learned_file_skips_known_scrolls()
+    test_due_spells_follow_level()
+    test_spell_offer_after_train()
+    test_spell_offer_yes_walks_from_guild()
+    test_spell_offer_no_stays_put()
+    test_class_weapons_name_the_uniques()
+    test_gear_offer_after_train()
+    test_gear_offer_yes_walks_skiff_from_guild()
+    test_gear_offer_yes_stops_at_town_square()
+    test_gear_offer_yes_keeps_hunting()
+    test_gear_offer_no_stays_put()
+    test_gear_offer_skipped_if_holding_weapon()
+    test_silvermere_square_drops_manhole()
+    test_silvermere_docks_walks_to_square()
+    test_gear_offer_beats_spell_at_ten()
     test_ninja_gear_skips_spell_shop()
     test_manual_asks_health_once()
     test_manual_no_health_until_prompt()

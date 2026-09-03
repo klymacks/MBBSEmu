@@ -71,6 +71,8 @@ def test_f3_to_f8_sequences() -> None:
         (b"\x8fY", _CLIENT.KEY_F10),
         (b"\x1b[23~", _CLIENT.KEY_F11),
         (b"\x1b[23;2~", _CLIENT.KEY_F11),
+        (b"\x1b[24~", _CLIENT.KEY_F12),
+        (b"\x1b[24;2~", _CLIENT.KEY_F12),
     )
     for seq, want in cases:
         assert _read(seq) == want, seq
@@ -95,6 +97,7 @@ def test_peek_commands() -> None:
     assert _CLIENT.KEY_F9 not in _CLIENT.PEEK_COMMANDS
     assert _CLIENT.KEY_F10 not in _CLIENT.PEEK_COMMANDS
     assert _CLIENT.KEY_F11 not in _CLIENT.PEEK_COMMANDS
+    assert _CLIENT.KEY_F12 not in _CLIENT.PEEK_COMMANDS
     assert _CLIENT.KEY_F1 not in _CLIENT.PEEK_COMMANDS
 
 
@@ -118,15 +121,15 @@ def _special(
     return kind, brain, pacer, world
 
 
-def _drain(pacer: _CLIENT.KeyPacer) -> list[bytes]:
+def _drain(pacer: _CLIENT.KeyPacer, now: float = 1.0) -> list[bytes]:
     out: list[bytes] = []
-    now = 1.0
+    t = now
     while True:
-        line = pacer.take(now)
+        line = pacer.take(t)
         if line is None:
             break
         out.append(line)
-        now += 1.0
+        t += 1.0
     return out
 
 
@@ -142,8 +145,8 @@ def _next_cmd(pacer: _CLIENT.KeyPacer, now: float = 1.0) -> bytes | None:
             return item
 
 
-def _cmds(pacer: _CLIENT.KeyPacer) -> list[bytes]:
-    return [ln for ln in _drain(pacer) if ln.endswith(b"\r")]
+def _cmds(pacer: _CLIENT.KeyPacer, now: float = 1.0) -> list[bytes]:
+    return [ln for ln in _drain(pacer, now) if ln.endswith(b"\r")]
 
 
 def _arena(*, following: str = "") -> WorldState:
@@ -208,6 +211,7 @@ def test_realm_line_keeps_attack() -> None:
     """`att filthbug` engages. `k` / `a` / `at` are speech or collide."""
     assert _CLIENT.realm_line("attack acid slime") == "att acid slime"
     assert _CLIENT.realm_line("att acid slime") == "att acid slime"
+    assert _CLIENT.realm_line("att tt giant rat") == "att giant rat"
     assert _CLIENT.realm_line("k kobold thief") == "att kobold thief"
     assert _CLIENT.realm_line("kill filthbug") == "att filthbug"
     assert _CLIENT.realm_line("attack") == "att"
@@ -675,6 +679,69 @@ def test_f11_is_sheet_does_not_takeover() -> None:
     assert not pacer.pending()
 
 
+def test_f12_starts_logoff_without_dumping_keys() -> None:
+    kind, brain, pacer, _ = _special(_CLIENT.KEY_F12, in_realm=True, hunting=True)
+    assert kind == "logoff"
+    assert brain.mode == "manual"
+    assert not pacer.pending()
+    kind, brain, pacer, _ = _special(
+        _CLIENT.KEY_F12, in_realm=False, hunting=False
+    )
+    assert kind == "logoff"
+    assert not pacer.pending()
+
+
+def test_logoff_walk_realm_then_mud_then_close() -> None:
+    brain = Brain(allowed=True)
+    brain.mode = "hunt"
+    pacer = _CLIENT.KeyPacer()
+    walk = _CLIENT.LogoffWalk()
+    walk.start(brain, 1.0)
+    assert brain.mode == "manual"
+    walk.tick("[HP=20/28]:", in_realm=True, pacer=pacer, now=1.1)
+    assert _cmds(pacer, now=1.1) == [b"x\r"]
+    assert walk.hint == "leaving the realm..."
+    assert not walk.done
+    walk.tick("[HP=20/28]:", in_realm=True, pacer=pacer, now=2.0)
+    assert not pacer.pending()
+    walk.tick(
+        "[MAJORMUD]  (C) 2002 West Coast Creations\nEnter the Realm",
+        in_realm=False,
+        pacer=pacer,
+        now=3.0,
+    )
+    assert _cmds(pacer, now=3.0) == [b"x\r"]
+    assert walk.hint == "leaving MajorMUD..."
+    walk.tick(
+        "[HP=20/28]: leftover\n[MAJORMUD]  Enter the Realm",
+        in_realm=True,
+        pacer=pacer,
+        now=3.5,
+    )
+    assert not pacer.pending()
+    walk.tick(
+        "Make your selection: ",
+        in_realm=False,
+        pacer=pacer,
+        now=4.0,
+    )
+    assert not pacer.pending()
+    assert walk.done
+    assert walk.hint == _CLIENT.LogoffWalk.FAREWELL
+    assert "Y" not in walk.hint
+    assert "thanks for calling" not in walk.hint.lower()
+
+
+def test_logoff_walk_already_on_bbs_menu_just_closes() -> None:
+    brain = Brain(allowed=True)
+    pacer = _CLIENT.KeyPacer()
+    walk = _CLIENT.LogoffWalk()
+    walk.start(brain, 1.0)
+    walk.tick("Make your selection: ", in_realm=False, pacer=pacer, now=1.1)
+    assert not pacer.pending()
+    assert walk.done
+
+
 def test_toggle_sheet_pauses_at_guild() -> None:
     state = WorldState()
     state.in_realm = True
@@ -832,10 +899,11 @@ def test_help_overlay_lists_keys() -> None:
     assert "F9          join / join off" in raw
     assert "F10         copy / held" in raw
     assert "F11         train / live" in raw
+    assert "F12         logoff" in raw
     assert "train hold" in raw
     assert "brain paused" in raw
     assert "freezes status on the sheet" not in raw
-    for n in range(1, 12):
+    for n in range(1, 13):
         assert _CLIENT.fkey_label(n, style="help") in raw
     assert "peek - hunter stays on" in raw
     assert "same as F11" in raw
@@ -924,9 +992,29 @@ def test_chrome_title_shows_who() -> None:
     sheet_bar = _plain_bar(
         _CLIENT.chrome(30, sheet, "x", "127.0.0.1", WorldState(), kly)
     )
-    assert "klymacks" in sheet_bar
-    assert "Ninja" in sheet_bar
+    assert "new character" in sheet_bar
+    assert "Ninja" not in sheet_bar
     assert "character sheet" in sheet_bar
+
+
+def test_paint_signoff_is_klymacks() -> None:
+    screen = _CLIENT.AnsiScreen()
+    _CLIENT.paint_signoff(screen)
+    text = screen.text()
+    assert screen.rows == 25
+    assert screen.cols == 80
+    assert "klymacks" in text
+    assert "KLYMACKS" not in text
+    assert "Klymacks" not in text
+    assert "sysop" in text
+    assert "yours" in text and "truly" in text
+    assert "the gate closes." in text
+    assert "still here." in text
+    assert "thanks for calling" not in text.lower()
+    ice = [c for row in screen.buf for c in row if c.ch in "█▄▀▓▒░■"]
+    assert len(ice) >= 40
+    assert {c.fg for c in ice} <= {0, 4, 6, 7}
+    assert 2 not in {c.fg for row in screen.buf for c in row}
 
 
 def test_paint_splash_is_graffiti() -> None:
@@ -1055,6 +1143,61 @@ def test_copy_hold_clipboard_returns_bool() -> None:
     assert ok in {True, False}
 
 
+def test_validating_name_says_wait() -> None:
+    screen = _CLIENT.AnsiScreen()
+    screen.feed(b"Please wait - Validating your name.\r\nValidating your name, please wait.\r\n")
+    assert screen.looks_like_creation()
+    assert _CLIENT.status_line(screen, "127.0.0.1") == "checking name"
+    tip = _CLIENT.creation_tip(screen)
+    assert "Scanning" in tip
+    assert "Wait" in tip
+
+
+def test_name_taken_is_creation() -> None:
+    screen = _CLIENT.AnsiScreen()
+    screen.feed(b"You may not use Klymacks as your name.\r\nPlease enter a new name:\r\n")
+    assert screen.looks_like_creation()
+    assert _CLIENT.status_line(screen, "127.0.0.1") == "name taken"
+    assert "taken" in _CLIENT.creation_tip(screen)
+    kly = Brain(allowed=True, me="sysop Klymacks", klass="ninja")
+    bar = _plain_bar(_CLIENT.chrome(30, screen, "x", "127.0.0.1", WorldState(), kly))
+    assert "new character" in bar
+    assert "That given name is taken" in bar
+    assert "Ninja" not in bar
+
+
+def test_autopilot_starts_bbs_signup_when_unknown() -> None:
+    pacer = _CLIENT.KeyPacer()
+    pacer.push_text("matt")
+    pilot = _CLIENT.Autopilot({"username": "matt", "password": "matt"}, play=True)
+    pilot.phase = "pass"
+    pilot.tick("Invalid Credentials\nUsername: ", pacer)
+    assert pilot.phase == "signup_new"
+    assert not pacer.pending()
+    assert "creating one" in pilot.hint()
+    now = 10.0
+    pilot.tick("Enter Username or enter \"NEW\"\nUsername: ", pacer)
+    assert pilot.phase == "signup_user"
+    assert pacer.take(now) == b"NEW\r"
+    now += _CLIENT.KEY_GAP
+    pilot.tick("Please enter a unique Username (Max. 29 Characters):\n", pacer)
+    assert pacer.take(now) == b"matt\r"
+    now += _CLIENT.KEY_GAP
+    pilot.tick("Please enter a strong Password:\n", pacer)
+    assert pacer.take(now) == b"matt\r"
+    now += _CLIENT.KEY_GAP
+    pilot.tick("Please re-enter your password to confirm:\n", pacer)
+    assert pacer.take(now) == b"matt\r"
+    now += _CLIENT.KEY_GAP
+    pilot.tick("Please enter a valid e-Mail Address:\n", pacer)
+    assert pacer.take(now) == b"matt@finns.realm\r"
+    assert pilot.phase == "signup_gender"
+    assert "M or F" in pilot.hint()
+    screen = _CLIENT.AnsiScreen()
+    screen.feed(b"Please enter your gender 'M' or 'F' (can be changed later):\r\n")
+    assert _CLIENT.status_line(screen, "127.0.0.1") == "BBS signup"
+
+
 def test_autopilot_stops_when_already_logged_in() -> None:
     pacer = _CLIENT.KeyPacer()
     pacer.push_text("sysop")
@@ -1167,6 +1310,19 @@ def test_action_pry_shop_vague_blocks_buy() -> None:
     pry.note_send("buy longsword", 2)
     assert not pry.blocks("buy longsword")
     state.prompt_seq = 3
+    assert not pry.maybe_send(state, sent.append)
+    assert sent == []
+
+
+def test_action_pry_read_vague_asks_for_full_name() -> None:
+    pry = _CLIENT.ActionPry()
+    pry.note_send("read scroll of bless", 1)
+    pry.note_shop_vague()
+    assert pry.stuck
+    state = WorldState()
+    state.in_realm = True
+    state.prompt_seq = 2
+    sent: list[str] = []
     assert not pry.maybe_send(state, sent.append)
     assert sent == []
 
@@ -1373,6 +1529,49 @@ def test_handle_client_line_train() -> None:
     assert not brain.train_holding()
 
 
+def test_handle_client_line_spell_yn() -> None:
+    state = WorldState()
+    state.in_realm = True
+    state.level = 2
+    state.room = "Newhaven, Guild"
+    brain = Brain(allowed=True, klass="paladin")
+    brain._spell_offer = "bless"
+    brain._spell_offer_at = 2
+    kind, mud = _CLIENT.handle_client_line("y", brain, state)
+    assert kind == "spell" and mud is None
+    assert brain._want_spell == "bless"
+    brain._spell_offer = "bless"
+    kind, mud = _CLIENT.handle_client_line("n", brain, state)
+    assert kind == "spell" and mud is None
+    assert not brain._want_spell
+    kind, mud = _CLIENT.handle_client_line("look", brain, state)
+    assert kind == "game" and mud == "look"
+
+
+def test_handle_client_line_gear_yn() -> None:
+    state = WorldState()
+    state.in_realm = True
+    state.level = 10
+    state.room = "Newhaven, Guild"
+    brain = Brain(allowed=True, klass="ninja", me="klymacks")
+    brain._gear_offer = "ebony ninjato"
+    brain._gear_offer_key = "class-weapon"
+    brain._gear_offer_at = 10
+    kind, mud = _CLIENT.handle_client_line("y", brain, state)
+    assert kind == "gear" and mud is None
+    assert brain._want_gear == "ebony ninjato"
+    tip = brain.offer_tip(10)
+    assert "ebony ninjato" in tip
+    assert len(tip) <= 80
+    brain._gear_offer = "ebony ninjato"
+    brain._gear_offer_key = "class-weapon"
+    kind, mud = _CLIENT.handle_client_line("n", brain, state)
+    assert kind == "gear" and mud is None
+    assert not brain._want_gear
+    kind, mud = _CLIENT.handle_client_line("look", brain, state)
+    assert kind == "game" and mud == "look"
+
+
 def test_handle_client_line_aa() -> None:
     state = WorldState()
     state.in_realm = True
@@ -1534,6 +1733,50 @@ def test_chrome_shows_exp_and_train() -> None:
     assert "> " in held
 
 
+def test_chrome_splits_status_and_stats() -> None:
+    state = WorldState()
+    state.in_realm = True
+    state.hp = 24
+    state.max_hp = 28
+    state.max_hp_known = True
+    state.ma = 3
+    state.max_ma = 8
+    state.room = "Newhaven, Arena"
+    state.apply(
+        {
+            "kind": "level",
+            "level": 1,
+            "exp": 762,
+            "needed": 1538,
+            "next": 2300,
+            "pct": 33,
+        }
+    )
+    state.apply({"kind": "combat", "dealt": 23})
+    brain = Brain(allowed=True, klass="ninja", stealth="always")
+    brain.mode = "hunt"
+    brain.next_action = "fighting"
+    bar = _CLIENT.chrome(30, _CLIENT.AnsiScreen(), "x", "127.0.0.1", state, brain)
+    text = _plain_bar(bar)
+    raw = bar.decode("utf-8", "replace")
+    assert "FINN'S REALM" in text
+    assert "░▒▓" in text
+    assert "Newhaven Arena" in text
+    assert "hunt" in text
+    assert "next: fighting" in text
+    assert "HP 24/28" in text
+    assert "MA 3/8" in text
+    assert "EXP 762/2300 33%" in text
+    assert "DPS 23" in text
+    assert text.index("Newhaven Arena") < text.index("HP 24/28")
+    assert text.index("HP 24/28") < text.index("DPS 23")
+    assert _CLIENT.ICE_CYAN_SGR in raw
+    assert _CLIENT.ICE_DIM_SGR in raw
+    assert _CLIENT.visible_len(_CLIENT.ice_title_line("klymacks (Ninja)")) <= 80
+    assert _CLIENT.visible_len(_CLIENT.color_status_line(state, brain)) <= 80
+    assert _CLIENT.visible_len(_CLIENT.color_stats_line(state.stats_label(), state)) <= 80
+
+
 def test_chrome_shows_hp_and_ma_over_max() -> None:
     state = WorldState()
     state.in_realm = True
@@ -1566,6 +1809,34 @@ def test_chrome_shows_hp_and_ma_over_max() -> None:
     )
     assert crowded.index("HP 24/28") < crowded.index("EXP 762/2300 33%")
     assert crowded.count("EXP ") == 1
+
+
+def test_form_hold_drops_hp_keeps_fields() -> None:
+    """F11 lock: delayed [HP=] / health must not overwrite Intellect."""
+    raw = (
+        b"\x1b[9;5H\x1b[1;37mIntellect  (40   to 100 )  66\x1b[0m"
+        b"[HP=42/MA=10]:                   66"
+        b"\r\nHealth:    42/42    [100%]  Mana:   10/10\r\n"
+        b"\x1b[10;5HWillpower  (40   to 100 )  40"
+    )
+    held = _CLIENT.form_hold_payload(raw)
+    assert b"[HP=" not in held
+    assert b"Health:" not in held
+    assert b"Intellect" in held
+    assert b"Willpower" in held
+    assert b"66" in held
+    screen = _CLIENT.AnsiScreen()
+    screen.feed(b"\x1b[2J\x1b[1;1HM A J O R  M U D Character Creation\r\n")
+    screen.feed(b"Given Name   Matt\r\n")
+    screen.feed(held)
+    text = screen.text()
+    assert "Character Creation" in text
+    assert "Given Name" in text
+    assert "[HP=" not in text
+    assert _CLIENT.form_blocks_line(b"health\r", frozen=True)
+    assert _CLIENT.form_blocks_line(b"look\r", frozen=True)
+    assert not _CLIENT.form_blocks_line(b"\r", frozen=True)
+    assert not _CLIENT.form_blocks_line(b"health\r", frozen=False)
 
 
 def test_leftover_hp_keeps_creation_sheet() -> None:
@@ -1721,11 +1992,15 @@ if __name__ == "__main__":
     test_f10_is_hold_does_not_takeover()
     test_f10_hold_outside_realm()
     test_f11_is_sheet_does_not_takeover()
+    test_f12_starts_logoff_without_dumping_keys()
+    test_logoff_walk_realm_then_mud_then_close()
+    test_logoff_walk_already_on_bbs_menu_just_closes()
     test_toggle_sheet_pauses_at_guild()
     test_toggle_sheet_walks_when_not_at_guild()
     test_toggle_sheet_unlocks_and_cancels_walk()
     test_toggle_sheet_cancels_walk_and_hold()
     test_sheet_lock_keeps_fsd_keys_with_leftover_hp()
+    test_form_hold_drops_hp_keeps_fields()
     test_leftover_hp_keeps_creation_sheet()
     test_hold_snapshot_writes_utf8_grid()
     test_copy_hold_clipboard_returns_bool()
@@ -1735,9 +2010,13 @@ if __name__ == "__main__":
     test_fkey_table_feeds_tip_and_hold()
     test_window_title_is_distinct()
     test_chrome_title_shows_who()
+    test_paint_signoff_is_klymacks()
     test_paint_splash_is_graffiti()
     test_login_ans_replaces_mbbs_banner()
     test_chrome_lists_new_map()
+    test_validating_name_says_wait()
+    test_name_taken_is_creation()
+    test_autopilot_starts_bbs_signup_when_unknown()
     test_autopilot_stops_when_already_logged_in()
     test_key_gap_is_slow_enough_for_majormud()
     test_realm_gate_holds_auto_play_after_first_prompt()
@@ -1746,6 +2025,7 @@ if __name__ == "__main__":
     test_action_pry_skips_buy_sell_wear()
     test_action_pry_skips_settle_and_look()
     test_action_pry_shop_vague_blocks_buy()
+    test_action_pry_read_vague_asks_for_full_name()
     test_action_pry_gear_move_then_inv()
     test_drop_stray_keys_during_login_not_on_sheet()
     test_f7_does_not_arm_hunt_before_realm()
@@ -1753,10 +2033,13 @@ if __name__ == "__main__":
     test_play_paused_is_train_hold_not_copy()
     test_chrome_hp_tone()
     test_handle_client_line_train()
+    test_handle_client_line_spell_yn()
+    test_handle_client_line_gear_yn()
     test_handle_client_line_aa()
     test_maybe_ask_exp_once()
     test_hunt_ticks_do_not_resend_exp()
     test_chrome_shows_exp_and_train()
+    test_chrome_splits_status_and_stats()
     test_chrome_shows_hp_and_ma_over_max()
     test_realm_prompt_drops_sheet_mask()
     print("ok")

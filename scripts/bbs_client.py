@@ -50,6 +50,7 @@ from client.parse import events_from_payload, harvest_screen, parse_events
 from client.paths import attack_line
 from client.pvp import clear_lock, is_locked
 from client.realm_map import DEFAULT_PATH, Atlas
+from client.signoff import paint as paint_signoff
 from client.splash import paint as paint_piece
 from client.state import WorldState
 from client.transcript import Transcript
@@ -66,6 +67,7 @@ KEY_F8 = b"\x00F8"
 KEY_F9 = b"\x00F9"
 KEY_F10 = b"\x00F10"
 KEY_F11 = b"\x00F11"
+KEY_F12 = b"\x00F12"
 KEY_ESC = b"\x1b"
 KEY_UP = bytes((0x1B, ord("["), 65))
 KEY_DN = bytes((0x1B, ord("["), 66))
@@ -98,6 +100,7 @@ FKEYS: dict[int, dict[str, str]] = {
     9: {"on": "join", "off": "join off"},
     10: {"on": "copy", "off": "held"},
     11: {"on": "train", "off": "live", "held": "SHEET", "note": "(hold, brain paused)"},
+    12: {"on": "logoff — yours truly"},
 }
 
 
@@ -170,6 +173,7 @@ _CSI_FKEYS = {
     20: KEY_F9,
     21: KEY_F10,
     23: KEY_F11,
+    24: KEY_F12,
 }
 _CSI_SS3 = {
     b"\x1b[OP": KEY_F1,
@@ -220,26 +224,30 @@ class Telnet:
             i += 2
         return bytes(out)
 
+    def _send(self, data: bytes) -> None:
+        try:
+            self.sock.sendall(data)
+        except (ConnectionResetError, BrokenPipeError, OSError):
+            return
+
     def _negotiate(self, cmd: int, opt: int) -> None:
         if cmd == WILL and opt in (ECHO, SGA):
-            self.sock.sendall(bytes((IAC, DO, opt)))
+            self._send(bytes((IAC, DO, opt)))
         elif cmd == DO and opt == SGA:
-            self.sock.sendall(bytes((IAC, WILL, SGA)))
+            self._send(bytes((IAC, WILL, SGA)))
         elif cmd == DO and opt == TTYPE:
-            self.sock.sendall(bytes((IAC, WILL, TTYPE)))
-            self.sock.sendall(
-                bytes((IAC, SB, TTYPE, 0)) + b"ANSI" + bytes((IAC, SE))
-            )
+            self._send(bytes((IAC, WILL, TTYPE)))
+            self._send(bytes((IAC, SB, TTYPE, 0)) + b"ANSI" + bytes((IAC, SE)))
         elif cmd == DO and opt == NAWS:
-            self.sock.sendall(bytes((IAC, WILL, NAWS)))
-            self.sock.sendall(bytes((IAC, SB, NAWS, 0, 80, 0, 25, IAC, SE)))
+            self._send(bytes((IAC, WILL, NAWS)))
+            self._send(bytes((IAC, SB, NAWS, 0, 80, 0, 25, IAC, SE)))
         elif cmd == DO:
-            self.sock.sendall(bytes((IAC, WONT, opt)))
+            self._send(bytes((IAC, WONT, opt)))
         elif cmd == WILL:
-            self.sock.sendall(bytes((IAC, DONT, opt)))
+            self._send(bytes((IAC, DONT, opt)))
 
     def send(self, data: bytes) -> None:
-        self.sock.sendall(data)
+        self._send(data)
 
 
 class Cell:
@@ -474,6 +482,13 @@ class AnsiScreen:
             or "You notice" in blob
         ):
             return False
+        low_early = blob.lower()
+        if (
+            "please enter a new name" in low_early
+            or "you may not use" in low_early
+            or "validating your name" in low_early
+        ):
+            return True
         if (
             "Character Creation" in blob
             or "Point Cost Chart" in blob
@@ -713,7 +728,7 @@ class ActionPry:
         self._prying = False
 
     def note_shop_vague(self) -> None:
-        if self._last.startswith(("buy", "sell")) or not self._last:
+        if self._last.startswith(("buy", "sell", "read")) or not self._last:
             self.stuck = True
             self._prying = False
             self._last = ""
@@ -758,7 +773,75 @@ def drop_stray_keys(
     """
     if pilot is None or on_form or in_realm:
         return False
-    return bool(pilot.play) and pilot.phase in {"user", "pass", "bbs", "mud"}
+    return bool(pilot.play) and pilot.phase in {
+        "user",
+        "pass",
+        "bbs",
+        "mud",
+        "signup_new",
+        "signup_user",
+        "signup_pass",
+        "signup_confirm",
+        "signup_email",
+    }
+
+
+class LogoffWalk:
+    """F12: one X per screen. Save the toon, skip the BBS Y/N modem bit."""
+
+    FAREWELL = "Logged off. Finn's Realm is still here."
+
+    def __init__(self) -> None:
+        self.active = False
+        self.done = False
+        self.hint = "logging off..."
+        self._sent = ""
+        self._began = 0.0
+
+    def start(self, brain: Brain, now: float) -> None:
+        self.active = True
+        self.done = False
+        self._sent = ""
+        self._began = now
+        self.hint = "logging off..."
+        if brain.hunting():
+            brain.toggle_hunt()
+        brain.mode = "manual"
+
+    def tick(
+        self, text: str, *, in_realm: bool, pacer: KeyPacer, now: float
+    ) -> None:
+        if not self.active or self.done:
+            return
+        if now - self._began > 10:
+            self.done = True
+            self.hint = self.FAREWELL
+            return
+        if pacer.pending():
+            return
+        low = text.lower()
+        if "make your selection" in low:
+            self.done = True
+            self.hint = self.FAREWELL
+            return
+        if "[majormud]" in low or "enter the realm" in low:
+            if self._sent != "mud":
+                pacer.push_text("x", wipe=False)
+                self._sent = "mud"
+                self.hint = "leaving MajorMUD..."
+            return
+        if (in_realm or "[hp=" in low) and self._sent in ("", "guess"):
+            pacer.push_text("x", wipe=False)
+            self._sent = "realm"
+            self.hint = "leaving the realm..."
+            return
+        if in_realm or "[hp=" in low:
+            return
+        if self._sent == "":
+            pacer.push_text("x", wipe=False)
+            self._sent = "guess"
+            self.hint = "logging off..."
+            return
 
 
 class Autopilot:
@@ -769,16 +852,26 @@ class Autopilot:
         self.password = str(player.get("password", "klymacks1"))
         self.play = play
         self.phase = "user"
+        self.blocked_why = ""
         self._until = 0.0
 
     def hint(self) -> str:
+        if self.phase == "blocked":
+            return self.blocked_why or (
+                f"{self.username} already logged in — close that window"
+            )
         return {
             "user": "signing in...",
             "pass": "signing in...",
             "bbs": "opening the board...",
             "mud": "entering the realm...",
+            "signup_new": "no BBS login yet — creating one...",
+            "signup_user": "no BBS login yet — creating one...",
+            "signup_pass": "no BBS login yet — creating one...",
+            "signup_confirm": "no BBS login yet — creating one...",
+            "signup_email": "no BBS login yet — creating one...",
+            "signup_gender": "type M or F for the BBS account, then Enter",
             "play": "your keyboard",
-            "blocked": f"{self.username} already logged in — close that window",
         }.get(self.phase, "connected")
 
     def takeover(self) -> None:
@@ -792,6 +885,15 @@ class Autopilot:
         low = text.lower()
         if "already logged in" in low or "only 1 connection" in low:
             self.phase = "blocked"
+            self.blocked_why = (
+                f"{self.username} already logged in — close that window"
+            )
+            pacer.clear()
+            return
+        if "invalid credentials" in low:
+            # NEW on the username prompt creates the BBS login. No sqlite edits.
+            self.phase = "signup_new"
+            self.blocked_why = ""
             pacer.clear()
             return
         if pacer.pending() or time.monotonic() < self._until:
@@ -805,6 +907,37 @@ class Autopilot:
         if self.phase == "pass" and "Password:" in text:
             pacer.push_text(self.password, wipe=False)
             self.phase = "bbs"
+            return
+        if self.phase == "signup_new" and "Username:" in text:
+            pacer.push_text("NEW", wipe=False)
+            self.phase = "signup_user"
+            return
+        if self.phase == "signup_user" and (
+            "unique Username" in text or "unique username" in low
+        ):
+            pacer.push_text(self.username, wipe=False)
+            self.phase = "signup_pass"
+            return
+        if self.phase == "signup_user" and "unavailable" in low:
+            self.phase = "play"
+            return
+        if self.phase == "signup_pass" and "Password:" in text:
+            pacer.push_text(self.password, wipe=False)
+            self.phase = "signup_confirm"
+            return
+        if self.phase == "signup_confirm" and "confirm" in low:
+            pacer.push_text(self.password, wipe=False)
+            self.phase = "signup_email"
+            return
+        if self.phase == "signup_email" and "e-mail" in low:
+            pacer.push_text(f"{self.username}@finns.realm", wipe=False)
+            self.phase = "signup_gender"
+            return
+        if self.phase == "signup_gender" and "Make your selection" in text:
+            pacer.push_text("M", wipe=False)
+            self.phase = "mud" if self.play else "play"
+            return
+        if self.phase == "signup_gender":
             return
         if self.phase == "bbs" and "Make your selection" in text:
             pacer.push_text("M", wipe=False)
@@ -866,6 +999,26 @@ def paint_splash(
     screen.generation += 1
 
 
+def show_signoff(screen: AnsiScreen, stdin: int, pending: bytearray) -> None:
+    """F12 closer: klymacks tag, then one key and we leave."""
+    screen.feed(b"\x1b[2J")
+    paint_signoff(screen)
+    screen.feed(b"\x1b[0m")
+    sys.stdout.buffer.write(b"\x1b[?7l\x1b[2J\x1b[H")
+    sys.stdout.buffer.write(screen.render())
+    sys.stdout.buffer.flush()
+    while True:
+        readable, _, _ = select.select([stdin], [], [])
+        if stdin not in readable:
+            continue
+        key = read_key(stdin, pending)
+        if key is None:
+            continue
+        if key == b"":
+            continue
+        return
+
+
 def render_login_ans(screen: AnsiScreen, rows: int = 20) -> bytes:
     """CP437 .ANS for MBBSEmu ANSI.Login — board already homes and clears."""
     out = bytearray()
@@ -894,6 +1047,11 @@ def write_login_ans(path: Path, *, port: int = 2323) -> Path:
 def status_line(screen: AnsiScreen, host: str) -> str:
     text = screen.text()
     if screen.looks_like_creation():
+        low = text.lower()
+        if "you may not use" in low or "please enter a new name" in low:
+            return "name taken"
+        if "validating your name" in low:
+            return "checking name"
         return "character sheet"
     if "[HP=" in text or "hits:" in text.lower():
         return ""
@@ -901,6 +1059,13 @@ def status_line(screen: AnsiScreen, host: str) -> str:
         return "MajorMUD menu  ·  press E"
     if "Make your selection" in text:
         return "board menu"
+    if (
+        "create a new Account" in text
+        or "unique Username" in text
+        or "e-Mail Address" in text
+        or "gender 'M' or 'F'" in text
+    ):
+        return "BBS signup"
     if "Username:" in text or "Password:" in text:
         return "signing in"
     if is_loopback_host(host):
@@ -908,9 +1073,86 @@ def status_line(screen: AnsiScreen, host: str) -> str:
     return "blocked"
 
 
+def creation_tip(screen: AnsiScreen) -> str:
+    """Create/reroll is yours. After a wipe, say why the name bounced."""
+    low = screen.text().lower()
+    if "you may not use" in low or "please enter a new name" in low:
+        return "That given name is taken. Type another, then Enter."
+    if "validating your name" in low:
+        return "Scanning monsters, NPCs, and players for that name. Wait — do not type."
+    if "choose a race" in low or "select a race" in low:
+        return "You pick race. Client will not."
+    if "choose a class" in low or "select a class" in low:
+        return "You pick class. Client will not."
+    return "Type on the form. F11 live after SAVE. Last name required."
+
+
 def form_frozen(screen: AnsiScreen, sheet_lock: bool = False) -> bool:
     """TRAIN STATS / creation, or F11 lock. Status peeks must not type here."""
     return bool(sheet_lock or screen.looks_like_creation())
+
+
+_FORM_STATUS_PREFIXES = (
+    b"[HP=",
+    b"Health:",
+    b"Hits:",
+    b"Mana:",
+    b"Exp:",
+    b"Obvious exits:",
+    b"Also here:",
+    b"You notice ",
+    b"You are carrying ",
+    b"You have no keys",
+    b"*Combat",
+    b"* Combat",
+)
+
+
+def form_hold_payload(payload: bytes) -> bytes:
+    """Keep FSD CSI and field text. Drop [HP=] / look / i that would write on the sheet."""
+    out = bytearray()
+    i = 0
+    n = len(payload)
+    line_start = True
+    while i < n:
+        if payload[i] == 0x1B:
+            line_start = False
+            j = i + 1
+            if j < n and payload[j] == 0x5B:
+                j += 1
+                while j < n and not (0x40 <= payload[j] <= 0x7E):
+                    j += 1
+                if j < n:
+                    j += 1
+            else:
+                j = min(n, i + 2)
+            out += payload[i:j]
+            i = j
+            continue
+        if payload[i] in (10, 13):
+            line_start = True
+            out.append(payload[i])
+            i += 1
+            continue
+        if payload.startswith((b"[HP=", b"[hp=", b"[Hp="), i):
+            while i < n and payload[i] not in (10, 13, 0x1B):
+                i += 1
+            continue
+        if line_start:
+            rest = payload[i:]
+            if any(rest.startswith(pref) for pref in _FORM_STATUS_PREFIXES):
+                while i < n and payload[i] not in (10, 13, 0x1B):
+                    i += 1
+                continue
+        out.append(payload[i])
+        line_start = False
+        i += 1
+    return bytes(out)
+
+
+def form_blocks_line(outgoing: bytes, *, frozen: bool) -> bool:
+    """Queued look/health/i must not send while F11 holds the form. Lone CR is a field."""
+    return bool(frozen and outgoing.endswith(b"\r") and outgoing != b"\r")
 
 
 def play_paused(brain: Brain, *, frozen: bool = False) -> bool:
@@ -938,7 +1180,7 @@ def handle_special_key(
     in_realm: bool,
     state: WorldState | None = None,
 ) -> str | None:
-    """F1 panic, F2–F6 peek, F7 hunt, F8 ambush/aa, F9 join, F10 copy, F11 train.
+    """F1 panic, F2–F6 peek, F7 hunt, F8 ambush/aa, F9 join, F10 copy, F11 train, F12 logoff.
 
     Peek / copy never call takeover(). F10 freezes the painted grid and
     copies it; hunt keeps ticking. That is copy hold, not train hold.
@@ -978,6 +1220,11 @@ def handle_special_key(
         return "hold"
     if key == KEY_F11:
         return "sheet"
+    if key == KEY_F12:
+        if brain.hunting():
+            brain.toggle_hunt()
+        brain.mode = "manual"
+        return "logoff"
     cmd = PEEK_COMMANDS.get(key)
     if cmd is None:
         return None
@@ -1141,6 +1388,10 @@ def handle_client_line(cmd: str, brain: Brain, state: WorldState) -> tuple[str, 
         else:
             brain.toggle_aa()
         return "aa", None
+    if brain.pending_offer() and low in {"y", "yes", "n", "no"}:
+        kind = "gear" if brain.gear_offer() else "spell"
+        brain.answer_offer(low in {"y", "yes"}, state)
+        return kind, None
     if low in {"train", "go train"}:
         if brain.train_holding():
             if low == "go train":
@@ -1205,13 +1456,20 @@ def osc_set_title(title: str) -> bytes:
 
 
 # Bright red / yellow — VGA SGR the 80×25 HUD uses for hits. Footer bg is #0b0e0c.
+# Ice chrome: cyan / white / blue — same palette as the Finn's Realm splash.
 HP_RED_SGR = "\x1b[1;31m"
 HP_YELLOW_SGR = "\x1b[1;33m"
 CHROME_BODY_SGR = "\x1b[1;37m"
+ICE_CYAN_SGR = "\x1b[1;36m"
+ICE_DIM_SGR = "\x1b[0;36m"
+ICE_BLUE_SGR = "\x1b[0;34m"
 HP_LOW_RATIO = 0.25
 _SGR_RE = re.compile(r"\x1b\[[0-9;]*m")
 _HP_SEGMENT_RE = re.compile(r"HP -?\d+(?:/\d+)?")
+_MA_SEGMENT_RE = re.compile(r"MA -?\d+(?:/\d+)?")
 _TRAIN_SEGMENT_RE = re.compile(r"TRAIN \d+%")
+_EXP_SEGMENT_RE = re.compile(r"EXP \d+(?:/\d+)?(?: \d+%)?")
+_DPS_SEGMENT_RE = re.compile(r"DPS (?:\d+|—)")
 
 
 def visible_len(text: str) -> int:
@@ -1261,6 +1519,59 @@ def color_footer_train(plain: str, state: WorldState) -> str:
     )
 
 
+def _paint_segment(plain: str, matched: re.Match[str] | None, sgr: str) -> str:
+    if not matched or not sgr:
+        return plain
+    return (
+        f"{plain[: matched.start()]}{sgr}{matched.group(0)}"
+        f"{CHROME_BODY_SGR}{plain[matched.end() :]}"
+    )
+
+
+def color_stats_line(plain: str, state: WorldState) -> str:
+    """Ice-paint HP / MA / EXP / DPS. HP keeps the hit-tone red/yellow."""
+    painted = color_footer_hp(plain, state)
+    painted = color_footer_train(painted, state)
+    painted = _paint_segment(painted, _MA_SEGMENT_RE.search(painted), ICE_CYAN_SGR)
+    if not state.can_train():
+        painted = _paint_segment(painted, _EXP_SEGMENT_RE.search(painted), ICE_BLUE_SGR)
+    dps = _DPS_SEGMENT_RE.search(painted)
+    dps_sgr = ICE_CYAN_SGR if state.dps() is not None else ICE_DIM_SGR
+    return _paint_segment(painted, dps, dps_sgr)
+
+
+def room_chrome(room: str) -> str:
+    text = (room or "the realm").replace(",", "")
+    return text[:28] if text else "the realm"
+
+
+def color_status_line(state: WorldState, brain: Brain) -> str:
+    room = room_chrome(state.room)
+    tag = brain.f8_label()
+    shown = brain.next_action
+    if tag and tag not in shown:
+        shown = f"{shown}  {tag}"
+    return (
+        f"{ICE_CYAN_SGR}{room}{CHROME_BODY_SGR}   "
+        f"{ICE_CYAN_SGR}{brain.mode}{CHROME_BODY_SGR}   "
+        f"{ICE_DIM_SGR}next: {shown}"
+    )
+
+
+def ice_title_line(who: str, extra: str = "") -> str:
+    """One-row sauce plate. Same cyan / white / blue as the connect splash."""
+    mark_l = "░▒▓ "
+    name = "FINN'S REALM"
+    mark_r = " ▓▒░"
+    left = mark_l + name + mark_r
+    right = "  ".join(part for part in (who, extra) if part)
+    gap = max(1, 80 - len(left) - len(right))
+    return (
+        f"{ICE_DIM_SGR}{mark_l}{ICE_CYAN_SGR}{name}{ICE_DIM_SGR}{mark_r}"
+        f"{' ' * gap}{ICE_CYAN_SGR}{right}"
+    )
+
+
 def chrome(
     term_rows: int,
     screen: AnsiScreen,
@@ -1277,8 +1588,6 @@ def chrome(
     prefix = osc_set_title(wm_title)
     if term_rows < ROWS + 3:
         return prefix
-    rule = "─" * 80
-    title = " FINN'S REALM"
     frozen = form_frozen(screen, sheet_lock)
     tag = ""
     if frozen:
@@ -1292,27 +1601,16 @@ def chrome(
         right = ""
     if tag:
         right = f"{right}  {tag}" if right else tag
-    who = footer_who(brain)
+    who = "new character" if screen.looks_like_creation() else footer_who(brain)
     if who:
         right = f"{who}  {right}" if right else who
-    head = f"{title}{right.rjust(80 - len(title))}"[:80]
+    head = pad_visible(ice_title_line(right), 80)
     if state.in_realm and state.hp is not None:
-        vitals = state.hp_label()
-        progress = state.exp_label()
-        if progress:
-            vitals = f"{vitals}  {progress}" if vitals else progress
-        room = (state.room or "the realm")[:22]
-        tag = brain.f8_label()
-        shown = brain.next_action
-        if tag and tag not in shown:
-            shown = f"{shown}  {tag}"
-        rest = f"  {room}  {brain.mode}  next: {shown}"
-        budget = max(0, 80 - len(vitals))
-        plain = (vitals + rest[:budget])[:80]
-        body = pad_visible(color_footer_hp(plain, state), 80)
-        body = color_footer_train(body, state)
+        status = pad_visible(color_status_line(state, brain), 80)
+        stats = pad_visible(color_stats_line(state.stats_label(), state), 80)
     else:
-        body = hint[:80]
+        status = pad_visible(hint[:80], 80)
+        stats = pad_visible(f"{ICE_DIM_SGR}{'░' * 80}", 80)
     if screen.looks_like_creation():
         foot = ""
         for y in range(screen.rows - 1, 17, -1):
@@ -1320,9 +1618,13 @@ def chrome(
             if line and "────" not in line and "____" not in line:
                 foot = line
                 break
-        tip = (foot or "Type on the form. F11 live after SAVE. Last name required.")[:80]
+        tip = (foot or creation_tip(screen))[:80]
+        if "you may not use" in screen.text().lower() or "please enter a new name" in screen.text().lower():
+            tip = creation_tip(screen)[:80]
     elif frozen:
         tip = fkey_label(11, style="sheet_tip")
+    elif brain.offer_tip(state.level):
+        tip = brain.offer_tip(state.level)
     elif brain.train_holding():
         tip = "train hold  brain paused  you type  F11/Esc live"
     elif brain.bail:
@@ -1340,9 +1642,9 @@ def chrome(
         tip = "Ctrl-C hangs up"
     out = bytearray(prefix)
     out += b"\x1b[0m"
-    out += f"\x1b[26;1H\x1b[0;36m{rule}\x1b[0m".encode()
-    out += f"\x1b[27;1H\x1b[1;36m{head:<80}\x1b[0m".encode()
-    out += f"\x1b[28;1H\x1b[1;37m{pad_visible(body, 80)}\x1b[0m".encode()
+    out += f"\x1b[26;1H{head}\x1b[0m".encode()
+    out += f"\x1b[27;1H{status}\x1b[0m".encode()
+    out += f"\x1b[28;1H{stats}\x1b[0m".encode()
     if use_local_input(screen, state, sheet_lock):
         shown = realm_bar_text(typed)
         cmd = f"> {shown}"
@@ -1353,7 +1655,8 @@ def chrome(
         return bytes(out)
     out += f"\x1b[29;1H\x1b[0;36m{tip:<80}\x1b[0m".encode()
     if term_rows >= ROWS + CHROME:
-        out += f"\x1b[30;1H\x1b[0;36m{rule}\x1b[0m".encode()
+        drip = pad_visible(f"{ICE_DIM_SGR}{'░' * 80}", 80)
+        out += f"\x1b[30;1H{drip}\x1b[0m".encode()
     out += f"\x1b[{screen.cy + 1};{screen.cx + 1}H\x1b[?25h".encode()
     return bytes(out)
 
@@ -1364,11 +1667,11 @@ def help_overlay() -> bytes:
         "Enter       send the line (sheet: next field)",
         "Up Down     move fields (Tab is Down)",
         "Space       cycle hair, eyes, SAVE / EXIT",
-        *(fkey_label(n, style="help") for n in range(1, 12)),
+        *(fkey_label(n, style="help") for n in range(1, 13)),
         "F2-F6       peek - hunter stays on",
         "hunt stop   same as F7, not sent to the game",
         "train       same as F11 — train hold, brain paused, you type stats",
-        "Ctrl-C      hang up",
+        "Ctrl-C      hang up now",
         "Names go on the bar under the form, then Enter",
         "At [HP=] type reroll to throw the character.",
     )
@@ -1514,9 +1817,12 @@ def run(host: str, port: int, player: dict[str, object], auto: bool) -> int:
         atlas=Atlas(DEFAULT_PATH),
         auto_join=bool(player.get("auto_join", True)),
         aa=player.get("aa"),
+        learned_path=str(ROOT / "data" / "learned-spells.json"),
+        gear_path=str(ROOT / "data" / "got-gear.json"),
     )
     typed = ""
     logoff_at = 0.0
+    walk = LogoffWalk()
     stdin = sys.stdin.fileno()
     old = termios.tcgetattr(stdin)
     pending = bytearray()
@@ -1596,6 +1902,7 @@ def run(host: str, port: int, player: dict[str, object], auto: bool) -> int:
     def freeze_sheet(*, from_train: bool = False) -> None:
         nonlocal sheet_lock, sheet_prompt
         sheet_lock = True
+        pacer.clear()
         if from_train and sheet_prompt is None:
             sheet_prompt = state.prompt_seq
 
@@ -1644,6 +1951,8 @@ def run(host: str, port: int, player: dict[str, object], auto: bool) -> int:
                 timeout = 0.03 if pacer.pending() else (
                     0.4 if brain.hunting() and not paused and not settling else None
                 )
+                if walk.active:
+                    timeout = 0.05 if timeout is None else min(timeout, 0.05)
                 if settling:
                     wait = min(0.5, max(0.05, gate.remain(now)))
                     timeout = wait if timeout is None else min(timeout, wait)
@@ -1655,7 +1964,12 @@ def run(host: str, port: int, player: dict[str, object], auto: bool) -> int:
                         chunk = sock.recv(4096)
                     except BlockingIOError:
                         chunk = b""
+                    except (ConnectionResetError, BrokenPipeError):
+                        chunk = b""
                     if not chunk:
+                        if walk.active:
+                            show_signoff(screen, stdin, pending)
+                            return 0
                         why = "disconnected"
                         if pilot is not None and pilot.phase == "blocked":
                             why = pilot.hint()
@@ -1666,7 +1980,8 @@ def run(host: str, port: int, player: dict[str, object], auto: bool) -> int:
                         return 0
                     payload = telnet.feed(chunk)
                     was_sheet = screen.looks_like_creation()
-                    screen.feed(payload)
+                    hold = sheet_lock or was_sheet
+                    screen.feed(form_hold_payload(payload) if hold else payload)
                     try:
                         apply_payload(payload)
                     except Exception:
@@ -1691,7 +2006,7 @@ def run(host: str, port: int, player: dict[str, object], auto: bool) -> int:
                     ):
                         thaw_sheet()
                         screen.leave_form()
-                    if pilot is not None:
+                    if pilot is not None and not walk.active:
                         pilot.tick(screen.text(), pacer)
                         hint = pilot.hint()
 
@@ -1703,6 +2018,14 @@ def run(host: str, port: int, player: dict[str, object], auto: bool) -> int:
                         if key == b"":
                             continue
                         if key == KEY_ESC:
+                            if (
+                                brain.pending_offer()
+                                or brain._want_spell
+                                or brain._want_gear
+                            ):
+                                brain.cancel_offer_run()
+                                hint = "your keyboard"
+                                continue
                             if brain.train_holding() or brain._want_train:
                                 brain.cancel_train()
                                 hint = "your keyboard"
@@ -1755,6 +2078,10 @@ def run(host: str, port: int, player: dict[str, object], auto: bool) -> int:
                                 thaw_sheet()
                                 hint = "your keyboard"
                             continue
+                        if special == "logoff":
+                            walk.start(brain, now)
+                            hint = walk.hint
+                            continue
                         if special == "hold":
                             hold_on = not hold_on
                             if hold_on:
@@ -1785,6 +2112,13 @@ def run(host: str, port: int, player: dict[str, object], auto: bool) -> int:
                                     hint = f"{brain.mode}  ·  {brain.next_action}"
                                     if mud:
                                         pacer.push_text(mud)
+                                    continue
+                                if kind in {"spell", "gear"}:
+                                    offered = brain.offer_tip(state.level)
+                                    if offered:
+                                        hint = offered
+                                    else:
+                                        hint = f"{brain.mode}  ·  {brain.next_action}"
                                     continue
                                 if kind == "train":
                                     if brain.train_holding():
@@ -1821,7 +2155,22 @@ def run(host: str, port: int, player: dict[str, object], auto: bool) -> int:
                 now = time.monotonic()
                 gate.note(in_realm=state.in_realm, frozen=frozen, now=now)
                 settling = gate.quiet(now)
-                if (
+                if walk.active:
+                    walk.tick(
+                        screen.text(),
+                        in_realm=state.in_realm,
+                        pacer=pacer,
+                        now=now,
+                    )
+                    hint = walk.hint
+                    if walk.done:
+                        try:
+                            sock.shutdown(socket.SHUT_RDWR)
+                        except OSError:
+                            pass
+                        show_signoff(screen, stdin, pending)
+                        return 0
+                elif (
                     in_play
                     and not paused
                     and not brain.bail
@@ -1835,7 +2184,13 @@ def run(host: str, port: int, player: dict[str, object], auto: bool) -> int:
                         followed=bool(state.following),
                         frozen=paused,
                     )
-                if in_play and not typed and not paused and not settling:
+                if (
+                    in_play
+                    and not walk.active
+                    and not typed
+                    and not paused
+                    and not settling
+                ):
                     if not pry.stuck:
                         brain.tick(state, brain_send, pacer.pending(), pacer.clear)
                         if (
@@ -1864,7 +2219,7 @@ def run(host: str, port: int, player: dict[str, object], auto: bool) -> int:
                         pacer.push_text("quit")
                         logoff_at = time.monotonic() + 1.5
                     elif pry.stuck:
-                        hint = "shop: type the full item name"
+                        hint = "type the full item name"
                     elif state.in_realm and not brain.bail:
                         hint = f"{brain.mode}  ·  {brain.next_action}"
                     if logoff_at and time.monotonic() >= logoff_at and not pacer.pending():
@@ -1874,6 +2229,10 @@ def run(host: str, port: int, player: dict[str, object], auto: bool) -> int:
 
                 outgoing = pacer.take(now)
                 if outgoing is not None:
+                    if form_blocks_line(
+                        outgoing, frozen=form_frozen(screen, sheet_lock)
+                    ):
+                        continue
                     telnet.send(outgoing)
 
                 stamp = (
@@ -1886,6 +2245,8 @@ def run(host: str, port: int, player: dict[str, object], auto: bool) -> int:
                     state.exp,
                     state.exp_pct,
                     state.exp_stale,
+                    state.dps(),
+                    int(time.monotonic()) if state.in_combat or state.dps() else 0,
                     state.room,
                     brain._want_train,
                     brain.train_holding(),
@@ -1971,10 +2332,18 @@ def main() -> int:
     try:
         return run(args.host, args.port, player, auto)
     except ConnectionRefusedError:
-        print(f"Nothing listening on {args.host}:{args.port}. Try ./scripts/start.sh", file=sys.stderr)
+        print(
+            f"Finn's Realm is not running on {args.host}:{args.port}. "
+            "Use Reboot Finn's Realm, or reopen the play shortcut.",
+            file=sys.stderr,
+        )
         _hold_error()
         return 1
     except KeyboardInterrupt:
+        return 0
+    except (ConnectionResetError, BrokenPipeError):
+        print("\n[disconnected]", file=sys.stderr)
+        _hold_error()
         return 0
     except Exception:
         tb = traceback.format_exc()

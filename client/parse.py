@@ -84,7 +84,10 @@ EXP_STAT_RE = re.compile(
     r"\((?P<next>\d+)\)\s*\[(?P<pct>\d+)%\]",
     re.IGNORECASE,
 )
-YOU_HIT_RE = re.compile(r"^You (?:critically )?\w+ .+ for \d+ damage", re.IGNORECASE)
+YOU_HIT_RE = re.compile(
+    r"^You (?:critically )?\w+ .+ for (?P<dmg>\d+) damage",
+    re.IGNORECASE,
+)
 SELF_SWING_RE = re.compile(
     r"^([A-Z][A-Za-z]+) moves to attack (.+?)[.!]?$",
     re.IGNORECASE,
@@ -502,6 +505,7 @@ def parse_line(line: str) -> dict[str, object] | None:
             if aimed:
                 ev["aimed"] = aimed
             return ev
+        return None
     m = ARRIVE_RE.search(raw)
     if m:
         return {"kind": "arrive", "name": m.group(1).strip()}
@@ -522,8 +526,13 @@ def parse_line(line: str) -> dict[str, object] | None:
         if "off" in low:
             return {"kind": "combat_off"}
         return {"kind": "combat"}
-    if YOU_HIT_RE.search(raw):
-        return {"kind": "combat"}
+    hit = YOU_HIT_RE.search(raw)
+    if hit:
+        ev: dict[str, object] = {"kind": "combat"}
+        dmg = hit.group("dmg")
+        if dmg:
+            ev["dealt"] = int(dmg)
+        return ev
     m = THIRD_HIT_RE.search(raw)
     if m:
         return {"kind": "combat", "actor": m.group(1).strip()}
@@ -957,6 +966,7 @@ _TITLE_SKIP = (
     "worn",
 )
 _TITLE_NOISE = (
+    "says",
     "attack",
     "swing",
     "miss",
@@ -985,8 +995,12 @@ _TITLE_NOISE = (
 
 
 def _looks_like_room_title(raw: str) -> bool:
-    if len(raw) > 60 or raw.endswith(":") or raw.endswith(".") or raw.endswith("]") or raw.endswith("!"):
+    if len(raw) > 80:
         return False
+    street = raw.endswith("St.") or " St. " in raw or " St. &" in raw
+    if not street:
+        if raw.endswith(":") or raw.endswith(".") or raw.endswith("]") or raw.endswith("!"):
+            return False
     if raw.startswith("[") or raw.startswith("You ") or raw.startswith("A "):
         return False
     if "%" in raw or "/" in raw:
@@ -1001,4 +1015,5 @@ def _looks_like_room_title(raw: str) -> bool:
     words = raw.split()
     if low.startswith("the ") and len(words) > 4:
         return False
-    return 1 <= len(words) <= 8 and raw[0].isupper()
+    limit = 10 if street else 8
+    return 1 <= len(words) <= limit and raw[0].isupper()

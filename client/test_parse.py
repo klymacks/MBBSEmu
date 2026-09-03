@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import time
+
 from .parse import events_from_payload, harvest_screen, parse_events, parse_line
 from .paths import (
     attack_name,
@@ -7,6 +9,7 @@ from .paths import (
     inventory_extras,
     inventory_names,
     inventory_worn,
+    in_silvermere,
     is_player,
     is_general_store,
     is_spell_shop,
@@ -15,9 +18,11 @@ from .paths import (
     lop_in,
     occupants_in,
     players_in,
+    is_special_step,
     is_trainer,
     step_toward_arena,
     step_toward_guild,
+    step_toward_silvermere,
     step_toward_spell_shop,
     step_toward_store,
 )
@@ -148,6 +153,7 @@ def test_falls_dead_and_combat_off() -> None:
     assert not any("lashworm" in m.lower() for m in room.mobs)
     assert room.in_combat is False
     assert attack_name("tack giant rat") == "giant rat"
+    assert attack_name("tt giant rat") == "giant rat"
     assert attack_name("ttack acid slime") == "acid slime"
     assert attack_name("attack giant rat") == "giant rat"
     assert attack_name("attacktack giant rat") == "giant rat"
@@ -205,6 +211,9 @@ def test_combat_and_shop() -> None:
     assert parse_line("You are typing too quickly - command ignored")["kind"] == "flood"
     assert parse_line("Why don't you slow down for a few seconds?")["kind"] == "flood"
     assert parse_line("You'll have to be more specific.")["kind"] == "shop_vague"
+    assert parse_line(
+        "Please be more specific.  You could have meant any of these:"
+    )["kind"] == "shop_vague"
     assert parse_line("The following items are for sale:")["kind"] == "shop"
     assert parse_line("You just bought a club for nothing.")["kind"] == "bought"
     assert parse_line("Newhaven, Armour Shop")["kind"] == "room"
@@ -356,14 +365,15 @@ def test_combat_and_shop() -> None:
     slime_hit = parse_line("The giant rat hits slime for 5 damage!")
     assert slime_hit and slime_hit["kind"] == "combat"
     assert not slime_hit.get("victim")
-    assert parse_line("You whap nasty giant rat for 5 damage!")["kind"] == "combat"
+    you_whap = parse_line("You whap nasty giant rat for 5 damage!")
+    assert you_whap["kind"] == "combat" and you_whap.get("dealt") == 5
     assert parse_line("The giant rat falls to the ground with a tortured squeak.")["kind"] == "killed"
     goo = parse_line("The acid slime dissolves into a puddle of bluish goo.")
     assert goo and goo["kind"] == "killed" and "slime" in str(goo.get("name")).lower()
     crumple = parse_line("The filthbug collapses, its legs curling tightly around it.")
     assert crumple and crumple["kind"] == "killed" and "filthbug" in str(crumple.get("name")).lower()
     crit = parse_line("You critically whap filthbug for 23 damage!")
-    assert crit and crit["kind"] == "combat"
+    assert crit and crit["kind"] == "combat" and crit.get("dealt") == 23
     assert lop_in(["filthbug", "large kobold thief"]) == "kobold thief"
     inroom = parse_line("A small carrion beast creeps in the room from nowhere.")
     assert inroom and inroom["kind"] == "arrive" and "carrion" in str(inroom.get("name")).lower()
@@ -470,7 +480,10 @@ def test_combat_and_shop() -> None:
     assert ready.can_train()
     assert ready.exp_label() == "TRAIN 100%"
     assert is_trainer("Newhaven, Guild")
+    assert is_trainer("Paladin Training Room")
     assert not is_trainer("Newhaven, Narrow Road")
+    assert not is_trainer("Guild Street, Southern End")
+    assert not is_trainer("Intersection of Guild St. & River St.")
     wound = WorldState()
     wound.apply({"kind": "prompt", "hp": 28, "max_hp": None})
     wound.apply({"kind": "prompt", "hp": 17, "max_hp": None})
@@ -532,6 +545,10 @@ def test_combat_and_shop() -> None:
     assert say and say["kind"] == "said" and say.get("aimed") == "giant rat"
     mashed = parse_line('You say "attack ttack acid slime"')
     assert mashed and mashed["kind"] == "said" and mashed.get("aimed") == "acid slime"
+    att_tt = parse_line('You say "att tt giant rat"')
+    assert att_tt and att_tt["kind"] == "said" and att_tt.get("aimed") == "giant rat"
+    party_say = parse_line('Klymacks says "att tt giant rat"')
+    assert party_say is None or party_say.get("kind") != "room"
     spoken = parse_line('You say "a carrion beast"')
     assert spoken and spoken["kind"] == "said" and spoken.get("aimed") == "carrion beast"
     at_said = parse_line('You say "at giant rat"')
@@ -938,6 +955,23 @@ def test_spell_shop_steps() -> None:
     assert step_toward_spell_shop("Newhaven, Arena", ["u"]) == "u"
 
 
+def test_silvermere_titles_and_skiff() -> None:
+    room = parse_line("Intersection of Guild St. & River St.")
+    assert room and room["kind"] == "room"
+    assert room["title"] == "Intersection of Guild St. & River St."
+    assert in_silvermere("Town Square")
+    assert in_silvermere("Docks")
+    assert not in_silvermere("Newhaven, Docks")
+    assert is_special_step("borrow skiff")
+    assert is_special_step("go manhole")
+    assert step_toward_arena("Town Square", ["n", "s", "e", "w"]) == "go manhole"
+    assert step_toward_arena("Sewer Tunnel, Junction (below TS)", ["u"]) is None
+    assert step_toward_silvermere("Newhaven, Village Entrance", ["n", "s", "w", "se"]) == "se"
+    assert step_toward_silvermere("Newhaven, Docks", ["n"]) == "borrow skiff"
+    assert step_toward_silvermere("Town Square") is None
+    assert step_toward_guild("Guild Street, Southern End", ["n", "s"]) is None
+
+
 def test_learn_scroll_lines() -> None:
     assert parse_line("You memorize the spell.")["kind"] == "learned"
     assert parse_line("You have learned a new spell!")["kind"] == "learned"
@@ -961,6 +995,23 @@ def test_learn_scroll_lines() -> None:
     assert s.spell_skip
 
 
+def test_outgoing_hits_feed_dps() -> None:
+    now = time.monotonic()
+    s = WorldState()
+    s.apply(parse_line("You whap nasty giant rat for 5 damage!"))
+    s.apply(parse_line("You critically whap filthbug for 23 damage!"))
+    assert s.dps() == 28
+    assert s.dps_label() == "DPS 28"
+    assert "DPS 28" in s.stats_label()
+    idle = WorldState()
+    assert idle.dps() is None
+    assert idle.dps_label() == "DPS —"
+    idle.note_dealt(10, now=now - 9)
+    assert idle.dps(now) is None
+    idle.note_dealt(12, now=now - 1)
+    assert idle.dps(now) == 12
+
+
 if __name__ == "__main__":
     test_prompt_and_room()
     test_kill()
@@ -978,5 +1029,7 @@ if __name__ == "__main__":
     test_nathaniel_steps_south()
     test_general_store_is_torch_shop()
     test_spell_shop_steps()
+    test_silvermere_titles_and_skiff()
     test_learn_scroll_lines()
+    test_outgoing_hits_feed_dps()
     print("ok")

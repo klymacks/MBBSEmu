@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+import time
+from collections import deque
 from dataclasses import dataclass, field
 
 from . import paths
+
+# One combat round. Footer DPS is damage landed in this window.
+HIT_WINDOW = 8.0
 
 
 def pool_label(
@@ -114,6 +119,8 @@ class WorldState:
     exp_asked: bool = False
     # This fight's `You gain N` already counted. Kill must not re-ask `exp`.
     exp_gained: bool = False
+    # (monotonic, damage) for `You … for N damage` in the last round.
+    _dealt: deque[tuple[float, int]] = field(default_factory=deque)
 
     def apply(self, event: dict[str, object]) -> None:
         kind = event.get("kind")
@@ -324,6 +331,9 @@ class WorldState:
                         self.saw_here = True
                         self.look_scan = False
             self._note_ally_hit(event)
+            dealt = event.get("dealt")
+            if isinstance(dealt, int) and dealt > 0:
+                self.note_dealt(dealt)
             return
         if kind == "actor":
             who = str(event.get("name") or "").strip()
@@ -674,6 +684,36 @@ class WorldState:
                 self.max_ma = ma
         if isinstance(mx, int) and mx > 0:
             self.max_ma = max(self.max_ma or 0, mx)
+
+    def note_dealt(self, dmg: int, now: float | None = None) -> None:
+        """Count outgoing damage for the footer DPS window."""
+        if dmg <= 0:
+            return
+        when = time.monotonic() if now is None else now
+        self._dealt.append((when, int(dmg)))
+        self._trim_dealt(when)
+
+    def _trim_dealt(self, now: float) -> None:
+        cut = now - HIT_WINDOW
+        while self._dealt and self._dealt[0][0] < cut:
+            self._dealt.popleft()
+
+    def dps(self, now: float | None = None) -> int | None:
+        """Damage landed in the last combat round, or None if idle."""
+        when = time.monotonic() if now is None else now
+        self._trim_dealt(when)
+        if not self._dealt:
+            return None
+        return sum(dmg for _at, dmg in self._dealt)
+
+    def dps_label(self, now: float | None = None) -> str:
+        raw = self.dps(now)
+        return "DPS —" if raw is None else f"DPS {raw}"
+
+    def stats_label(self, now: float | None = None) -> str:
+        """HP / MA / EXP / DPS for the dedicated stats row."""
+        parts = [self.hp_label(), self.exp_label(), self.dps_label(now)]
+        return "   ".join(part for part in parts if part)
 
     def hp_label(self) -> str:
         """Footer vitals: current/max when a max is known. Prompt MA is current only."""

@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 # One cast per combat round. 1.11p is about eight seconds; spam just fizzles.
 ROUND = 8.0
 
@@ -17,9 +20,9 @@ SPELLBOOK = {
 # Priest-1 at creation. Other classes buy a scroll at the Newhaven spell shop
 # (Dathalar, north of Narrow Path) and `read` it to memorize.
 CLASS_SPELLS = {
-    "paladin": ("minor healing", "harm", "bless"),
-    "cleric": ("minor healing", "harm"),
-    "priest": ("minor healing", "harm"),
+    "paladin": ("minor healing", "harm", "bless", "major healing"),
+    "cleric": ("minor healing", "harm", "major healing"),
+    "priest": ("minor healing", "harm", "major healing"),
     "warrior": (),
     "witchunter": (),
     "ninja": (),
@@ -33,7 +36,8 @@ SCROLLS = {
     "major healing": "scroll of major healing",
 }
 
-_SHOP_FIRST = ("minor healing", "harm", "bless")
+_SHOP_FIRST = ("minor healing", "harm", "bless", "major healing")
+SPELL_SHOP = "Newhaven, Spell Shop"
 
 
 def normalize_spell_list(raw: object) -> list[str]:
@@ -101,6 +105,37 @@ def can_cast(name: str, level: int | None) -> bool:
     return int(level) >= min_level(name)
 
 
+def due_to_learn(
+    klass: str,
+    listed: object,
+    level: int | None,
+    memorized: set[str],
+) -> list[str]:
+    """Shop spells this class can learn now and has not memorized."""
+    if level is None:
+        return []
+    have = {name.strip().lower() for name in memorized}
+    names = shop_spells(klass, None)
+    for extra in shop_spells(klass, listed):
+        if extra not in names:
+            names.append(extra)
+    return [
+        name
+        for name in names
+        if name not in have and int(level) >= min_level(name)
+    ]
+
+
+def next_due(
+    klass: str,
+    listed: object,
+    level: int | None,
+    memorized: set[str],
+) -> str:
+    due = due_to_learn(klass, listed, level, memorized)
+    return due[0] if due else ""
+
+
 def have_scroll(items: list[str], spell: str) -> bool:
     """True if `i` extras/inventory already has this spell's scroll."""
     want = scroll_name(spell)
@@ -114,6 +149,69 @@ def have_scroll(items: list[str], spell: str) -> bool:
         if "scroll" in low and short in low:
             return True
     return False
+
+
+def other_held_scrolls(items: list[str], spell: str) -> bool:
+    """True if `i` lists a scroll that is not this spell's."""
+    want = scroll_name(spell)
+    for raw in items:
+        low = raw.strip().lower()
+        if "scroll" in low and want not in low:
+            return True
+    return False
+
+
+def first_held_scroll(items: list[str], names: list[str], tried: set[str]) -> str:
+    """Exact shop name of the first unread scroll we are holding."""
+    for name in names:
+        if name in tried:
+            continue
+        if have_scroll(items, name):
+            return name
+    return ""
+
+
+def learned_who(who: str) -> str:
+    """Stable key: first token of the login/given blob."""
+    parts = [part.strip().lower() for part in who.replace(",", " ").split() if part.strip()]
+    return parts[0] if parts else ""
+
+
+def load_learned(path: str | Path | None, who: str) -> set[str]:
+    key = learned_who(who)
+    if not path or not key:
+        return set()
+    file = Path(path)
+    if not file.is_file():
+        return set()
+    try:
+        raw = json.loads(file.read_text())
+    except (OSError, json.JSONDecodeError):
+        return set()
+    if not isinstance(raw, dict):
+        return set()
+    listed = raw.get(key)
+    if not isinstance(listed, list):
+        return set()
+    return {str(name).strip().lower() for name in listed if str(name).strip()}
+
+
+def save_learned(path: str | Path | None, who: str, names: set[str]) -> None:
+    key = learned_who(who)
+    if not path or not key:
+        return
+    file = Path(path)
+    data: dict[str, list[str]] = {}
+    if file.is_file():
+        try:
+            loaded = json.loads(file.read_text())
+        except (OSError, json.JSONDecodeError):
+            loaded = {}
+        if isinstance(loaded, dict):
+            data = loaded
+    data[key] = sorted(names)
+    file.parent.mkdir(parents=True, exist_ok=True)
+    file.write_text(json.dumps(data, indent=2) + "\n")
 
 
 def have_known(items: list[str], spell: str) -> bool:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 
-from . import paths, realm_map, spells
+from . import gear, paths, realm_map, spells
 from .state import WorldState
 
 REST_RATIO = 0.60
@@ -65,6 +65,8 @@ class Brain:
         atlas: realm_map.Atlas | None = None,
         auto_join: bool = True,
         aa: bool | None = None,
+        learned_path: str | None = None,
+        gear_path: str | None = None,
     ) -> None:
         self.allowed = allowed
         self.rest_ratio = rest_ratio
@@ -119,11 +121,29 @@ class Brain:
         self.aa = (self.klass != "ninja") if aa is None else bool(aa)
         self._spells = spells.known_spells(self.klass, spell_list)
         self._learn = spells.shop_spells(self.klass, spell_list)
-        self._spells_shopped = not bool(self._learn)
+        self._learned_path = learned_path
+        self._memorized = spells.load_learned(learned_path, self.me)
+        self._last_read = ""
+        self._spell_offer = ""
+        self._spell_offer_at = 0
+        self._want_spell = ""
+        self._declined_at: dict[str, int] = {}
+        self._gear_path = gear_path
+        self._claimed = gear.load_claimed(gear_path, self.me)
+        self._gear_offer = ""
+        self._gear_offer_key = ""
+        self._gear_offer_at = 0
+        self._want_gear = ""
+        self._gear_declined_at: dict[str, int] = {}
+        self._seen_level: int | None = None
         self._spell_i = 0
+        while self._spell_i < len(self._learn) and self._learn[self._spell_i] in self._memorized:
+            self._spell_i += 1
+        self._spells_shopped = self._spell_i >= len(self._learn)
         self._spell_buying = False
         self._spell_reading = False
         self._spell_alt = False
+        self._scrolls_tried: set[str] = set()
         self._last_cast = ""
         self._cast_at = 0.0
         # Bless is owned at buy; do not recast until level changes after a refuse.
@@ -279,6 +299,8 @@ class Brain:
         self._panic_until = 0.0
         self._want_train = False
         self._train_hold = False
+        self._want_spell = ""
+        self._want_gear = ""
         self._clear_rescue()
 
     def hunting(self) -> bool:
@@ -765,6 +787,16 @@ class Brain:
     def _spell(self, kind: str) -> str:
         return spells.of_kind(self._spells, kind)
 
+    def _knows(self, name: str) -> bool:
+        return name.strip().lower() in self._memorized
+
+    def _remember(self, name: str) -> None:
+        low = name.strip().lower()
+        if not low or low in self._memorized:
+            return
+        self._memorized.add(low)
+        spells.save_learned(self._learned_path, self.me, self._memorized)
+
     def _have_mana(self, cost: int, state: WorldState) -> bool:
         if state.ma is None:
             return True
@@ -784,6 +816,8 @@ class Brain:
         # Can't-cast-yet is not "don't have it." Keep bless (and other buffs).
         if reason == "unknown" and tried and not buff:
             self._spells = [name for name in self._spells if name != tried]
+            self._memorized.discard(tried)
+            spells.save_learned(self._learned_path, self.me, self._memorized)
         if reason == "mana" and state.ma is None:
             state.ma = 0
         if buff:
@@ -883,6 +917,7 @@ class Brain:
         self._last_cast = f"heal:{spell}:{target}"
         self._cast_at = time.monotonic()
         self._cmd(send, spells.command(spell, target), state)
+        self._remember(spell)
         return True
 
     def _clear_heal_ask(self) -> None:
@@ -929,6 +964,7 @@ class Brain:
             self._last_cast = f"heal:{name}"
             self._cast_at = time.monotonic()
             self._cmd(send, spells.command(name), state)
+            self._remember(name)
             return True
         return self._try_ally_heal(state, send, name)
 
@@ -967,6 +1003,7 @@ class Brain:
         self._last_cast = key
         self._cast_at = time.monotonic()
         self._cmd(send, spells.command(name, target), state)
+        self._remember(name)
         return True
 
     def _try_bless(self, state: WorldState, send) -> bool:
@@ -1000,6 +1037,28 @@ class Brain:
         self._cast_at = time.monotonic()
         state.blessed = True
         self._cmd(send, spells.command(name), state)
+        self._remember(name)
+        return True
+
+    def _try_read_scroll(self, state: WorldState, send) -> bool:
+        """Read a scroll we are holding. Exact name — bless is not a guess."""
+        if state.in_combat or self._attacking:
+            return False
+        if _trusted_live(state) or paths.lop_in(state.mobs):
+            return False
+        if not self._learn:
+            return False
+        held = list(state.inventory) + list(state.extras)
+        name = spells.first_held_scroll(held, self._learn, self._scrolls_tried)
+        if not name:
+            return False
+        if self._knows(name):
+            self._scrolls_tried.add(name)
+            return False
+        self._last_read = name
+        self._scrolls_tried.add(name)
+        self._cmd(send, spells.read_command(name), state)
+        self.next_action = "read"
         return True
 
     def _sync_maxes(self, state: WorldState) -> None:
@@ -1070,6 +1129,277 @@ class Brain:
         if was_hold:
             self.next_action = "manual"
 
+    def spell_offer(self) -> str:
+        """Pending y/n shop name, or empty."""
+        return self._spell_offer
+
+    def gear_offer(self) -> str:
+        """Pending y/n class-weapon name, or empty."""
+        return self._gear_offer
+
+    def pending_offer(self) -> str:
+        return self._gear_offer or self._spell_offer
+
+    def offer_tip(self, level: int | None) -> str:
+        """Footer y/n or the quest hint after yes. Empty when nothing is up."""
+        if self._gear_offer and level is not None:
+            return gear.offer_tip(level, self._gear_offer, self.klass)
+        if self._spell_offer and level is not None:
+            return f"lvl {level} — get {self._spell_offer} at Dathalar?  y/n"
+        if self._want_spell:
+            return f"getting {self._want_spell}  y already  Esc/stop cancel"
+        if self._want_gear:
+            return gear.quest_tip(self.klass, self._want_gear)
+        return ""
+
+    def cancel_spell_run(self) -> None:
+        self._want_spell = ""
+        self._spell_offer = ""
+        if self.next_action.startswith("get ") and not self._want_gear:
+            self.next_action = "manual"
+
+    def cancel_gear_run(self) -> None:
+        self._want_gear = ""
+        self._gear_offer = ""
+        self._gear_offer_key = ""
+        if self.next_action.startswith("get ") and not self._want_spell:
+            self.next_action = "manual"
+
+    def cancel_offer_run(self) -> None:
+        self.cancel_spell_run()
+        self.cancel_gear_run()
+
+    def answer_offer(self, yes: bool, state: WorldState | None = None) -> str:
+        if self._gear_offer:
+            return self.answer_gear_offer(yes, state)
+        if self._spell_offer:
+            return self.answer_spell_offer(yes, state)
+        return ""
+
+    def answer_gear_offer(self, yes: bool, state: WorldState | None = None) -> str:
+        name = self._gear_offer
+        key = self._gear_offer_key or gear.CLASS_WEAPON_KEY
+        if not name:
+            return ""
+        level = self._gear_offer_at or (state.level if state is not None else 0) or 0
+        self._gear_offer = ""
+        self._gear_offer_key = ""
+        if not yes:
+            self._want_gear = ""
+            self._gear_declined_at[key] = int(level)
+            self.next_action = "manual"
+            return f"skip {name}"
+        self._want_gear = name
+        self.next_action = f"get {name}"
+        return f"get {name}"
+
+    def answer_spell_offer(self, yes: bool, state: WorldState | None = None) -> str:
+        name = self._spell_offer
+        if not name:
+            return ""
+        level = self._spell_offer_at or (state.level if state is not None else 0) or 0
+        self._spell_offer = ""
+        if not yes:
+            self._want_spell = ""
+            self._declined_at[name] = int(level)
+            self.next_action = "manual"
+            return f"skip {name}"
+        self._want_spell = name
+        self.next_action = f"get {name}"
+        return f"get {name}"
+
+    def _held_gear(self, state: WorldState) -> list[str]:
+        return list(state.inventory) + list(state.extras) + list(state.worn)
+
+    def _claim_if_held(self, state: WorldState) -> None:
+        weapon = gear.class_weapon(self.klass)
+        if not weapon or not gear.have_item(self._held_gear(state), weapon):
+            return
+        if gear.CLASS_WEAPON_KEY not in self._claimed:
+            self._claimed.add(gear.CLASS_WEAPON_KEY)
+            gear.save_claimed(self._gear_path, self.me, self._claimed)
+        if self._gear_offer == weapon or self._want_gear == weapon:
+            self.cancel_gear_run()
+
+    def _offer_class_weapon(self, state: WorldState) -> bool:
+        quest = gear.next_due(
+            self.klass,
+            state.level,
+            self._held_gear(state),
+            self._claimed,
+        )
+        if quest is None or state.level is None:
+            return False
+        declined = self._gear_declined_at.get(quest.key)
+        if declined is not None and state.level <= declined:
+            return False
+        self._gear_offer = quest.name
+        self._gear_offer_key = quest.key
+        self._gear_offer_at = state.level
+        return True
+
+    def _refresh_spell_offer(self, state: WorldState) -> None:
+        self._claim_if_held(state)
+        if self._train_hold or self._spell_offer or self._want_spell:
+            return
+        if self._gear_offer or self._want_gear:
+            return
+        if state.level is None:
+            return
+        if state.in_combat or self._attacking or self._lops_here(state):
+            return
+        first = self._seen_level is None
+        dinged = self._seen_level is not None and state.level > self._seen_level
+        trained = bool(state.trained)
+        self._seen_level = state.level
+        if not (first or dinged or trained):
+            return
+        if self._offer_class_weapon(state):
+            return
+        name = spells.next_due(self.klass, self._learn, state.level, self._memorized)
+        if not name:
+            return
+        declined = self._declined_at.get(name)
+        if declined is not None and state.level <= declined:
+            return
+        self._spell_offer = name
+        self._spell_offer_at = state.level
+
+    def _finish_spell_run(self) -> None:
+        self._want_spell = ""
+        self._spell_buying = False
+        self._spell_reading = False
+        self.mode = "manual"
+        self.next_action = "manual"
+
+    def _step_to_spell_shop(self, state: WorldState) -> str:
+        step = paths.step_toward_spell_shop(state.room, state.exits)
+        if step:
+            return step
+        for dest in paths.SPELL_SHOP_ROOMS:
+            route = self._atlas.path(state.room, dest)
+            if not route:
+                continue
+            nxt = route[0]
+            if state.exits and nxt not in state.exits:
+                continue
+            return nxt
+        return ""
+
+    def _step_to_class_quest(self, state: WorldState) -> str:
+        if paths.at_quest_stop(state.room):
+            return ""
+        for dest in gear.QUEST_ROOMS:
+            route = self._atlas.path(state.room, dest)
+            if not route:
+                continue
+            nxt = route[0]
+            if (
+                state.exits
+                and nxt not in state.exits
+                and not paths.is_special_step(nxt)
+            ):
+                continue
+            return nxt
+        return paths.step_toward_silvermere(state.room, state.exits) or ""
+
+    def _go_get_gear(self, state: WorldState, send) -> bool:
+        """Walk the skiff to Silvermere. Crypt stays on the keys."""
+        name = self._want_gear
+        if not name:
+            return False
+        if gear.have_item(self._held_gear(state), name):
+            self._claim_if_held(state)
+            self.mode = "manual"
+            self.next_action = "manual"
+            return True
+        if state.in_combat or self._attacking or self._lops_here(state):
+            self.next_action = f"get {name}"
+            return False
+        if state.mortal or state.bleeding:
+            return False
+        if self._with_leader(state):
+            self.next_action = f"get {name} (follow)"
+            return False
+        if self._down(state):
+            self._sitting = False
+            self._cmd(send, "break", state)
+            return True
+        if paths.at_quest_stop(state.room):
+            self.mode = "manual"
+            self.next_action = "manual"
+            return False
+        step = self._step_to_class_quest(state)
+        if not step:
+            return False
+        self._clear_landed_step(state)
+        if step == self._last_step:
+            self.next_action = f"get {name}"
+            return True
+        self._cmd(send, step, state)
+        self.next_action = f"get {name}"
+        return True
+
+    def _go_get_spell(self, state: WorldState, send) -> bool:
+        """Walk to Dathalar, buy/read one scroll, then manual."""
+        name = self._want_spell
+        if not name:
+            return False
+        if self._knows(name):
+            self._finish_spell_run()
+            return True
+        if state.in_combat or self._attacking or self._lops_here(state):
+            self.next_action = f"get {name}"
+            return False
+        if state.mortal or state.bleeding:
+            return False
+        if self._with_leader(state) and not paths.is_spell_shop(state.room):
+            self.next_action = f"get {name} (follow)"
+            return False
+        if self._down(state):
+            self._sitting = False
+            self._cmd(send, "break", state)
+            return True
+        if paths.is_spell_shop(state.room):
+            held = list(state.inventory) + list(state.extras)
+            if spells.have_scroll(held, name):
+                if not self._spell_reading:
+                    self._last_read = name
+                    self._cmd(send, spells.read_command(name), state)
+                    self._spell_reading = True
+                    self._scrolls_tried.add(name)
+                    self.next_action = f"read {name}"
+                    return True
+                self._remember(name)
+                self._finish_spell_run()
+                return True
+            if not self._spell_buying:
+                self._cmd(send, f"buy {spells.buy_name(name)}", state)
+                self._spell_buying = True
+                self.next_action = f"buy {name}"
+                return True
+            if not self._spell_reading:
+                self._last_read = name
+                self._cmd(send, spells.read_command(name), state)
+                self._spell_reading = True
+                self._scrolls_tried.add(name)
+                self.next_action = f"read {name}"
+                return True
+            self._remember(name)
+            self._finish_spell_run()
+            return True
+        step = self._step_to_spell_shop(state)
+        if not step:
+            self.next_action = f"get {name}"
+            return False
+        self._clear_landed_step(state)
+        if step == self._last_step:
+            self.next_action = f"get {name}"
+            return True
+        self._cmd(send, step, state)
+        self.next_action = f"get {name}"
+        return True
+
     def _go_train(self, state: WorldState, send) -> bool:
         """Walk to the guild and wait. Leader owns movement. Do not spend points."""
         if self._train_hold:
@@ -1121,6 +1451,7 @@ class Brain:
         if self._train_hold:
             if state.trained or not paths.is_trainer(state.room):
                 self.cancel_train()
+                self._refresh_spell_offer(state)
             else:
                 self.next_action = "train hold"
                 return
@@ -1130,6 +1461,7 @@ class Brain:
             if not self._realm_maxes:
                 self._asked_health = False
                 self._realm_maxes = True
+            self._refresh_spell_offer(state)
             if self._party(state, send):
                 return
             if self._ask_health(state, send):
@@ -1137,6 +1469,10 @@ class Brain:
             if self._run_ambush_boot(state, send):
                 return
             if self._dump_extras(state, send):
+                return
+            if self._go_get_gear(state, send):
+                return
+            if self._go_get_spell(state, send):
                 return
             if self._go_train(state, send):
                 return
@@ -1150,6 +1486,15 @@ class Brain:
         if self._pvp_sense(state):
             return
         self._note_cast_fail(state)
+        if state.learned:
+            name = self._last_read or (
+                self._learn[self._spell_i] if self._spell_i < len(self._learn) else ""
+            )
+            if name:
+                self._remember(name)
+                if name == self._want_spell:
+                    self._finish_spell_run()
+            state.learned = False
         self._note_sneak(state)
         self._assume_sneak()
         self._atlas.observe(state.room, state.exits, self._last_step, self._step_room)
@@ -1268,6 +1613,10 @@ class Brain:
         return state.hp < REST_ABS
 
     def _in_pit(self, state: WorldState) -> bool:
+        if paths.at_farm(state.room):
+            return True
+        if paths.in_silvermere(state.room):
+            return False
         if paths.is_dangerous(state.room):
             return True
         low = state.room.lower()
@@ -1306,7 +1655,7 @@ class Brain:
             and not self._party_ready(state)
         ):
             return False
-        return paths.step_toward_arena(state.room, state.exits) == "d"
+        return paths.is_farm_drop(paths.step_toward_arena(state.room, state.exits))
 
     def _down(self, state: WorldState) -> bool:
         return self._sitting or state.resting
@@ -1523,7 +1872,7 @@ class Brain:
         return not state.scanned
 
     def _arena_drop(self, state: WorldState) -> bool:
-        return paths.step_toward_arena(state.room, state.exits) == "d"
+        return paths.is_farm_drop(paths.step_toward_arena(state.room, state.exits))
 
     def _should_leave_to_sneak(self, state: WorldState) -> bool:
         """A listed lop is a fight. Do not walk off to sn first."""
@@ -1604,8 +1953,9 @@ class Brain:
         if self._in_pit(state):
             self._travel(send, "u", state, sneak=False)
             return True
-        if self._arena_drop(state):
-            self._travel(send, "d", state, sneak=False)
+        drop = paths.step_toward_arena(state.room, state.exits)
+        if paths.is_farm_drop(drop):
+            self._travel(send, drop, state, sneak=False)
             return True
         step = paths.step_toward_arena(state.room, state.exits)
         if not step:
@@ -1632,7 +1982,9 @@ class Brain:
             self._need_break = False
         parts = text.split()
         step = ""
-        if text in {"n", "s", "e", "w", "u", "d"}:
+        if text in {"n", "s", "e", "w", "u", "d", "ne", "nw", "se", "sw"}:
+            step = text
+        elif paths.is_special_step(text):
             step = text
         elif (
             len(parts) == 3
@@ -1653,7 +2005,7 @@ class Brain:
             self._sneak_armed = False
             self._sneak_block = False
             self._sneak_ready_at = 0.0
-        if step == "d":
+        if step == "d" or step == "go manhole":
             self._in_camp = True
             self._pit_fight = True
             self._drop_scan = True
@@ -1663,9 +2015,14 @@ class Brain:
             state.look_scan = True
             state.saw_here = False
             state.saw_see = False
-            if "arena" not in state.room.lower():
+            if step == "d" and paths.in_newhaven(state.room) and "arena" not in state.room.lower():
                 state.room = "Newhaven, Arena"
-            state.exits = [x for x in state.exits if x != "d"]
+                state.exits = [x for x in state.exits if x != "d"]
+            elif step == "d" and "arena" not in state.room.lower() and not paths.in_silvermere(
+                state.room
+            ):
+                state.room = "Newhaven, Arena"
+                state.exits = [x for x in state.exits if x != "d"]
         elif step == "u":
             self._in_camp = False
             self._pit_fight = False
@@ -1683,10 +2040,11 @@ class Brain:
     ) -> None:
         """Move. Ninja ambush sneaks first on an empty room; never with lops."""
         if step in realm_map.DIRS and state.exits and step not in state.exits:
-            self.next_action = "looking"
-            if not self._busy_swing(state):
-                self._cmd(send, "look", state)
-            return
+            if step not in realm_map.SPECIALS:
+                self.next_action = "looking"
+                if not self._busy_swing(state):
+                    self._cmd(send, "look", state)
+                return
         if (
             sneak
             and self._own_ambush(state)
@@ -1722,7 +2080,11 @@ class Brain:
     def _go(self, send, step: str, state: WorldState) -> bool:
         if not step:
             return False
-        if state.exits and step not in state.exits:
+        if (
+            state.exits
+            and step not in state.exits
+            and not paths.is_special_step(step)
+        ):
             return False
         if not state.exits and self.mode == "gear":
             return False
@@ -1989,22 +2351,46 @@ class Brain:
         name = self._learn[self._spell_i]
         held = list(state.inventory) + list(state.extras)
         if spells.have_known(held, name):
+            self._remember(name)
             self._advance_spell()
             return self._shop_one_spell(state, send)
+        if (self._knows(name) or name in self._scrolls_tried) and not spells.have_scroll(
+            held, name
+        ):
+            self._advance_spell()
+            return self._shop_one_spell(state, send)
+        held_name = spells.first_held_scroll(held, self._learn, self._scrolls_tried)
+        if held_name and held_name != name:
+            self._spell_i = self._learn.index(held_name)
+            name = held_name
+            self._spell_buying = False
+            self._spell_reading = False
+            self._spell_alt = False
         if spells.have_scroll(held, name):
+            if self._knows(name):
+                self._scrolls_tried.add(name)
+                self._advance_spell()
+                return self._shop_one_spell(state, send)
             if not self._spell_reading:
+                self._last_read = name
                 self._cmd(send, spells.read_command(name), state)
                 self._spell_reading = True
+                self._scrolls_tried.add(name)
                 return True
             self._advance_spell()
             return True
+        if spells.other_held_scrolls(held, name) and self._spell_buying:
+            self._advance_spell()
+            return self._shop_one_spell(state, send)
         if not self._spell_buying:
             self._cmd(send, f"buy {spells.buy_name(name, alt=self._spell_alt)}", state)
             self._spell_buying = True
             return True
         if not self._spell_reading:
+            self._last_read = name
             self._cmd(send, spells.read_command(name), state)
             self._spell_reading = True
+            self._scrolls_tried.add(name)
             return True
         self._advance_spell()
         return True
@@ -2028,6 +2414,8 @@ class Brain:
         self._note_already_worn(state)
         self._sync_gear_from_inv(state)
         if state.learned or state.spell_skip:
+            if state.learned and self._spell_i < len(self._learn):
+                self._remember(self._learn[self._spell_i])
             state.learned = False
             state.spell_skip = False
             if self._spell_buying or self._spell_reading:
@@ -2580,6 +2968,7 @@ class Brain:
         return True
 
     def _hunt(self, state: WorldState, send) -> None:
+        self._refresh_spell_offer(state)
         if paths.is_dangerous(state.room):
             self._in_camp = True
         if state.dark:
@@ -2599,6 +2988,13 @@ class Brain:
         if self._try_heal(state, send):
             return
         if self._try_bless(state, send):
+            return
+        self._refresh_spell_offer(state)
+        if self._go_get_gear(state, send):
+            return
+        if self._go_get_spell(state, send):
+            return
+        if self._try_read_scroll(state, send):
             return
         if self._retry_after_flop(state, send):
             return
@@ -2724,7 +3120,8 @@ class Brain:
             if self._setup_sneak(send, state):
                 return
             if self._sneak_ready():
-                self._travel(send, "d", state)
+                drop = paths.step_toward_arena(state.room, state.exits)
+                self._travel(send, drop or "d", state)
                 return
             return
         if self._with_leader(state):

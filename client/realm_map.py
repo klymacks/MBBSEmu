@@ -1,4 +1,4 @@
-"""Live MajorMUD room graph. Seeded from the NewHaven walk in paths.py.
+"""Live MajorMUD room graph. Seeded from Newhaven and Silvermere walks.
 
 Persists under data/ (gitignored). Does not read WCCMMUD module files.
 """
@@ -10,11 +10,29 @@ from collections import deque
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .paths import in_newhaven, in_silvermere
+
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_PATH = ROOT / "data" / "realm-map.json"
 
-DIRS = ("n", "s", "e", "w", "u", "d")
-REVERSE = {"n": "s", "s": "n", "e": "w", "w": "e", "u": "d", "d": "u"}
+CARDINALS = ("n", "s", "e", "w", "u", "d", "ne", "nw", "se", "sw")
+SPECIALS = ("borrow skiff", "search down", "go manhole")
+DIRS = CARDINALS + SPECIALS
+REVERSE = {
+    "n": "s",
+    "s": "n",
+    "e": "w",
+    "w": "e",
+    "u": "d",
+    "d": "u",
+    "ne": "sw",
+    "nw": "se",
+    "se": "nw",
+    "sw": "ne",
+    "borrow skiff": "borrow skiff",
+    "go manhole": "u",
+    "search down": "u",
+}
 
 # Mirrors client/paths.py: village entrance, shops, narrow path/road, arena.
 NEWHAVEN = {
@@ -22,6 +40,7 @@ NEWHAVEN = {
         "n": "Newhaven, Weapon Shop",
         "s": "Newhaven, Armour Shop",
         "w": "Newhaven, Narrow Path",
+        "se": "Newhaven, Forest Path",
     },
     "Newhaven, Weapon Shop": {"s": "Newhaven, Village Entrance"},
     "Newhaven, Nathaniel": {"s": "Newhaven, Village Entrance"},
@@ -44,15 +63,76 @@ NEWHAVEN = {
     "Newhaven, Guild": {"s": "Newhaven, Narrow Road"},
     "Newhaven, Healer": {"e": "Newhaven, Narrow Road"},
     "Newhaven, Arena": {"u": "Newhaven, Narrow Road"},
+    "Newhaven, Forest Path": {
+        "nw": "Newhaven, Village Entrance",
+        "s": "Newhaven, Docks",
+    },
+    "Newhaven, Docks": {
+        "n": "Newhaven, Forest Path",
+        "borrow skiff": "Pier",
+    },
 }
 
-_HOME_HINTS = (
+# Live Silvermere titles (no "Silvermere," prefix). Landmarks only — generic
+# River Street tiles share a name, so streets walk by compass in paths.py.
+SILVERMERE = {
+    "Town Square": {
+        "n": "Guild Street, Southern End",
+        "go manhole": "Sewer Tunnel, Junction (below TS)",
+    },
+    "Guild Street, Southern End": {
+        "s": "Town Square",
+        "n": "Guild Street, Northern End",
+    },
+    "Guild Street, Northern End": {
+        "s": "Guild Street, Southern End",
+        "n": "Intersection of Guild St. & River St.",
+    },
+    "Intersection of Guild St. & River St.": {
+        "s": "Guild Street, Northern End",
+        "w": "Docks",
+    },
+    "Docks": {
+        "e": "Intersection of Guild St. & River St.",
+        "n": "Pier",
+        "s": "Intersection of Guild St. & River St.",
+        "search down": "Pier",
+    },
+    "Pier": {
+        "s": "Docks",
+        "borrow skiff": "Newhaven, Docks",
+    },
+    "Sewer Tunnel, Junction (below TS)": {"u": "Town Square"},
+    "Fountain": {"go manhole": "Sewer Tunnel, Junction (below TS)"},
+    "Temple Hall": {"s": "Temple Spell Store", "n": "Temple Healer", "e": "Temple Street"},
+    "Temple Spell Store": {"n": "Temple Hall"},
+    "Temple Healer": {"s": "Temple Hall"},
+    "Temple Chapel": {"e": "Temple Hall"},
+    "Clerical Training Room": {"s": "Temple Hall"},
+    "Priestly Training Room": {"n": "Temple Hall"},
+    "Temple Street": {"e": "Town Square", "w": "Temple Hall"},
+    "Helfgrim's Blades": {"e": "Guild Street, Southern End"},
+    "Skali's Fine Armour, Front Room": {"s": "Town Square"},
+    "Sentara's Clothing, Front Room": {"s": "Town Square", "w": "Town Square"},
+    "General Store": {"n": "Town Square"},
+    "Magic Shoppe": {"n": "Intersection of Guild St. & River St."},
+    "Paladin Training Room": {},
+    "Ninja Training Room": {},
+    "Arena Entrance": {"s": "Town Square"},
+}
+
+_NEWHAVEN_HOME = (
     "arena",
     "narrow road",
     "village entrance",
     "healer",
     "newhaven",
 )
+_SILVERMERE_HOME = (
+    "sewer",
+    "town square",
+)
+_HOME_HINTS = _SILVERMERE_HOME + _NEWHAVEN_HOME
 
 
 def room_key(title: str) -> str:
@@ -67,8 +147,11 @@ def reverse_dir(step: str) -> str:
 
 def _mappable(title: str) -> bool:
     raw = title.strip()
-    if not raw or len(raw) > 60:
+    if not raw or len(raw) > 80:
         return False
+    if raw.endswith("St."):
+        words = raw.split()
+        return 2 <= len(words) <= 10
     if raw.endswith(("!", ":", "]", ".")):
         return False
     if raw[0].islower() or raw[0].isdigit():
@@ -95,7 +178,8 @@ class Atlas:
         self.store = Path(path) if path else None
         self.rooms: dict[str, dict[str, object]] = {}
         self.edges: dict[tuple[str, str], str] = {}
-        self._seed_newhaven()
+        self._seed_graph(NEWHAVEN)
+        self._seed_graph(SILVERMERE)
         if self.store:
             self.load()
 
@@ -106,12 +190,20 @@ class Atlas:
         key = room_key(title)
         return bool(key) and key in self.rooms
 
-    def _seed_newhaven(self) -> None:
-        for title, exits in NEWHAVEN.items():
+    def _seed_graph(self, graph: dict[str, dict[str, str]]) -> None:
+        for title, exits in graph.items():
             key = room_key(title)
-            self.rooms[key] = {"title": title, "exits": sorted(exits)}
+            node = self.rooms.get(key)
+            if node is None:
+                self.rooms[key] = {"title": title, "exits": sorted(exits)}
+            else:
+                old = list(node.get("exits") or [])
+                node["exits"] = sorted(set(old) | set(exits))
             for step, dest in exits.items():
                 self.edges[(key, step)] = room_key(dest)
+
+    def _seed_newhaven(self) -> None:
+        self._seed_graph(NEWHAVEN)
 
     def observe(
         self,
@@ -134,7 +226,7 @@ class Atlas:
             raw = raw or key
         if not key:
             return ""
-        seen = [d for d in (exits or []) if d in DIRS]
+        seen = [d for d in (exits or []) if d in CARDINALS]
         node = self.rooms.get(key)
         if node is None:
             self.rooms[key] = {"title": raw, "exits": seen}
@@ -145,8 +237,8 @@ class Atlas:
             node["exits"] = sorted(set(old) | set(seen))
         if prev_key and step and prev_key != key:
             self.edges[(prev_key, step)] = key
-            back = REVERSE.get(step)
-            if back and (key, back) not in self.edges:
+            back = REVERSE.get(step, "")
+            if back in CARDINALS and (key, back) not in self.edges:
                 self.edges[(key, back)] = prev_key
             if prev_key in self.rooms:
                 old = [d for d in self.rooms[prev_key].get("exits") or [] if d in DIRS]
@@ -165,12 +257,18 @@ class Atlas:
         return self._bfs(start, {goal})
 
     def way_home(self, title: str, exits: list[str] | None = None) -> list[str]:
-        """Shortest known walk toward arena, then Newhaven."""
+        """Shortest known walk toward the local farm, then the town hub."""
         start = room_key(title)
         if not start or start not in self.rooms:
             return []
         allowed = {d for d in (exits or []) if d in DIRS} if exits else None
-        for hint in _HOME_HINTS:
+        if in_newhaven(title):
+            hints = _NEWHAVEN_HOME
+        elif in_silvermere(title):
+            hints = _SILVERMERE_HOME
+        else:
+            hints = _NEWHAVEN_HOME + _SILVERMERE_HOME
+        for hint in hints:
             goals = {key for key in self.rooms if hint in key}
             goals.discard(start)
             if not goals:
@@ -230,7 +328,12 @@ class Atlas:
                 dest = self.edges.get((here, step))
                 if not dest or dest in seen:
                     continue
-                if here == start and allowed is not None and step not in allowed:
+                if (
+                    here == start
+                    and allowed is not None
+                    and step not in allowed
+                    and step not in SPECIALS
+                ):
                     continue
                 nxt = [*route, step]
                 if dest in goals:
