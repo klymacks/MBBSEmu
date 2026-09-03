@@ -116,12 +116,16 @@ namespace MBBSEmu
 
         public T GetAppSettingsFromConfiguration<T>(string valueName) => GetAppSettings<T>(ConfigurationRoot[valueName], valueName);
 
-        //Default Values not in appSettings
-        public string BBSCompanyName = "MBBSEmu\0";
-        public string BBSAddress1 = "4101 SW 47th Ave., Suite 101\0";
-        public string BBSAddress2 = "Fort Lauderdale, FL 33314\0";
-        public string BBSDataPhone = "(305) 583-7808\0";
-        public string BBSVoicePhone = "(305) 583-5990\0";
+        //BBS identity strings exposed to Modules via the MAJORBBS globals COMPANY,
+        //ADDRES1, ADDRES2, DATAPH and LIVEPH. These are optional appsettings.json
+        //keys so operators can present their own board's details; when a key is
+        //absent the historical default value is used, keeping existing setups
+        //unchanged.
+        public string BBSCompanyName => GetBBSIdentitySetting("BBS.CompanyName", "MBBSEmu");
+        public string BBSAddress1 => GetBBSIdentitySetting("BBS.Address1", "4101 SW 47th Ave., Suite 101");
+        public string BBSAddress2 => GetBBSIdentitySetting("BBS.Address2", "Fort Lauderdale, FL 33314");
+        public string BBSDataPhone => GetBBSIdentitySetting("BBS.DataPhone", "(305) 583-7808");
+        public string BBSVoicePhone => GetBBSIdentitySetting("BBS.VoicePhone", "(305) 583-5990");
 
         public T GetAppSettings<T>(object value, string valueName)
         {
@@ -276,6 +280,28 @@ namespace MBBSEmu
                 ConfigurationRoot[key] += "\0";
 
             result = ConfigurationRoot[key];
+            return result;
+        }
+
+        /// <summary>
+        ///     Returns a BBS identity string (company name, mailing address, phone) from
+        ///     appsettings.json, falling back to the supplied default when the key is not set.
+        ///
+        ///     Modules read these values as null-terminated C strings, so the result is always
+        ///     \0-terminated.
+        /// </summary>
+        /// <param name="key">appsettings.json key, e.g. BBS.CompanyName</param>
+        /// <param name="defaultValue">Value to use when the key is absent or empty</param>
+        /// <returns></returns>
+        private string GetBBSIdentitySetting(string key, string defaultValue)
+        {
+            var result = ConfigurationRoot[key];
+            if (string.IsNullOrEmpty(result))
+                result = defaultValue;
+
+            if (!result.EndsWith("\0"))
+                result += "\0";
+
             return result;
         }
 
